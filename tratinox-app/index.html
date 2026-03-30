@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tratinox - Sistema de Produção</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK (Realtime Database Compatibility Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div id="login-view" class="view active">
+        <div class="login-container">
+            <div class="logo-area">
+                <i class="fa-solid fa-industry logo-icon"></i>
+                <h1>TRATINOX</h1>
+                <p>Sistema de Produção</p>
+            </div>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Utilizador</label>
+                    <input type="text" id="username" placeholder="editor1" autocomplete="off" required>
+                </div>
+                <div class="input-group">
+                    <label>Palavra-passe</label>
+                    <input type="password" id="password" value="1234" required>
+                </div>
+                <button type="submit" class="btn primary-btn w-100">Entrar no Sistema</button>
+            </form>
+            <!-- Dicas removidas a pedido do utilizador -->
+
+        </div>
+    </div>
+
+    <div id="app-view" class="view">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-industry logo-icon-small"></i>
+                <h2>TRATINOX</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</li>
+                <li data-target="novo-servico"><i class="fa-solid fa-plus-circle"></i> Novo Serviço</li>
+                <li data-target="trabalhos-curso"><i class="fa-solid fa-list-check"></i> Trabalhos em Curso</li>
+                <li data-target="historico"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</li>
+                <li data-target="pecas"><i class="fa-solid fa-cubes"></i> Peças</li>
+                <li data-target="clientes"><i class="fa-solid fa-users"></i> Clientes</li>
+            </ul>
+            <div class="user-info">
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="details">
+                    <strong id="current-username">User</strong>
+                    <span id="current-role">Role</span>
+                </div>
+                <button id="logout-btn" class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </nav>
+
+        <main class="content">
+            <header class="topbar">
+                <h2 id="page-title">Dashboard</h2>
+                <div class="date-widget" id="current-date">--/--/----</div>
+            </header>
+
+            <div class="page-content">
+                <div id="page-dashboard" class="page active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue"><i class="fa-solid fa-spinner"></i></div>
+                            <div class="stat-details">
+                                <h3>Trabalhos em Curso</h3>
+                                <p id="stat-curso">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple"><i class="fa-solid fa-calendar-day"></i></div>
+                            <div class="stat-details">
+                                <h3>Serviços Hoje</h3>
+                                <p id="stat-hoje">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green"><i class="fa-solid fa-check-double"></i></div>
+                            <div class="stat-details">
+                                <h3>Concluídos Hoje</h3>
+                                <p id="stat-concluidos">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-2">
+                        <div class="card-header-flex">
+                            <h3><i class="fa-solid fa-display" style="color:var(--primary);"></i> Monitor de Produção (Próximos Trabalhos)</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table monitor-table">
+                                <thead>
+                                    <tr>
+                                        <th>Peça</th>
+                                        <th>Cliente</th>
+                                        <th style="min-width:140px;">Decapagem</th>
+                                        <th style="min-width:140px;">Eletropolimento</th>
+                                        <th style="min-width:140px;">Passivação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-monitor"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="joao-only mt-2" style="border-top: 1px dashed var(--border-color); padding-top: 2rem; display:none;">
+                        <h4 style="color: #e74c3c; margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i> Zona de Administração</h4>
+                        <p style="font-size: 0.9rem; color: #888; margin-bottom: 1rem;">Utilize este botão para apagar todos os clientes, peças e histórico para começar do zero.</p>
+                        <button class="btn danger-btn" onclick="resetSystem()" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">
+                            <i class="fa-solid fa-trash-can"></i> Apagar Tudo (Zerar Sistema)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="page-novo-servico" class="page">
+                    <div class="card form-card">
+                        <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> Novo Serviço Rápido</h3>
+                        <div class="grid-2">
+                            <div class="input-group">
+                                <label>1. Pesquisar Cliente (Ou escreva um novo)</label>
+                                <input type="text" id="ns-search-cliente" list="dl-clientes" placeholder="Ex: SFA, Termitron, etc...">
+                                <datalist id="dl-clientes"></datalist>
+                            </div>
+                            <div class="input-group">
+                                <label>2. Escolher Peça (Ou dê nome a uma nova)</label>
+                                <input type="text" id="ns-search-peca" list="dl-pecas" placeholder="Ref ou Nome da peça..." disabled>
+                                <datalist id="dl-pecas"></datalist>
+                            </div>
+                        </div>
+                        
+                        <form id="new-service-form" class="hidden mt-2" style="border-top: 2px solid var(--primary-light); padding-top: 1rem;">
+                            <input type="hidden" id="ns-part-id">
+                            <input type="hidden" id="ns-cliente-id">
+                            <div class="grid-3">
+                                <div class="input-group"><label>Guia / Ref. Cliente</label><input type="text" id="ns-guia" required></div>
+                                <div class="input-group"><label>Quantidade</label><input type="number" id="ns-quantidade" required></div>
+                                <div class="input-group"><label>Estado</label>
+                                    <select id="ns-estado" required>
+                                        <option value="Pendente">Aguardar Produção</option>
+                                        <option value="Em Curso">Em Produção</option>
+                                    </select>
+                                </div>
+                                <div class="input-group"><label>Data de Entrada</label><input type="date" id="ns-data-entrada" required></div>
+                                <div class="input-group"><label>Saída Prevista</label><input type="date" id="ns-data-prevista" required></div>
+                            </div>
+                            
+                            <h4 class="mt-1" style="color:var(--primary);">Parâmetros Técnicos (Editar se necessário)</h4>
+                            <div class="grid-4" id="ns-parametros"></div>
+                            
+                            <div class="input-group mt-1"><label>Observações do Serviço</label><textarea id="ns-observacoes" rows="2" placeholder="Notas sobre esta guia específica..."></textarea></div>
+
+                            <div class="form-actions mt-2">
+                                <button type="button" class="btn secondary-btn" id="btn-cancel-service">Cancelar</button>
+                                <button type="submit" class="btn primary-btn editor-only"><i class="fa-solid fa-floppy-disk"></i> Gravar e Registar Serviço</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="page-edicao" class="page">
+                    <div class="card form-card">
+                        <h3><button class="btn small-btn secondary-btn" onclick="switchPage('trabalhos-curso')" style="margin-right: 10px; cursor: pointer;"><i class="fa-solid fa-arrow-left"></i></button> Editar Serviço & Peça Mestre</h3>
+                        
+                        <input type="hidden" id="ed-servico-id">
+                        <input type="hidden" id="ed-peca-id">
+
+                        <div class="grid-3 mt-1">
+                            <div class="input-group"><label>Cliente</label><select id="ed-cliente"></select></div>
+                            <div class="input-group"><label>Data de Entrada</label><input type="date" id="ed-data-entrada"></div>
+                            <div class="input-group"><label>Saída Prevista</label><input type="date" id="ed-data-prevista"></div>
+                        </div>
+
+                        <h5 style="margin-top: 1rem; color: var(--primary);">Observações do Serviço Atualizado</h5>
+                        <div class="input-group mt-1">
+                            <textarea id="ed-observacoes" rows="3" placeholder="Registe anomalias, observações de banho ou especificações desta remessa..."></textarea>
+                        </div>
+
+                        <h5 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #555;">Afinação da Receita Mestre <small style="font-weight:normal;">(atualiza no sistema para todos os trabalhos futuros)</small></h5>
+                        <div class="grid-3 mt-1">
+                            <div class="input-group"><label>Área (dm²)</label><input type="text" id="ed-dm2"></div>
+                            <div class="input-group"><label>Potência (A)</label><input type="text" id="ed-potencia"></div>
+                            <div class="input-group"><label>Peso (kg)</label><input type="text" id="ed-peso" placeholder="Ex: 0,5 ou 3,2"></div>
+                            <div class="input-group"><label>Ref Interna</label><input type="text" id="ed-ref-interna" placeholder="Ref. interna"></div>
+                            <div class="input-group"><label>Comprimento (mm)</label><input type="text" id="ed-comprimento"></div>
+                            <div class="input-group"><label>Altura (mm)</label><input type="text" id="ed-altura"></div>
+                            <div class="input-group"><label>Largura (mm)</label><input type="text" id="ed-largura"></div>
+                            <div class="input-group"><label>Diâmetro (mm)</label><input type="text" id="ed-diametro"></div>
+                            <div class="input-group"><label>Desengorduramento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-deseng"><input style="flex:1;" type="text" id="ed-deseng-tempo"></div></div>
+                            <div class="input-group"><label>Decapagem</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-decap"><input style="flex:1;" type="text" id="ed-decap-tempo"></div></div>
+                            <div class="input-group"><label>Eletropolimento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-electro"><input style="flex:1;" type="text" id="ed-electro-tempo"></div></div>
+                            <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-passiv"><input style="flex:1;" type="text" id="ed-passiv-tempo"></div></div>
+                        </div>
+                        
+                        <div class="form-actions mt-2">
+                            <button class="btn primary-btn editor-only" onclick="guardarEdicao()">Guardar Alterações Reais</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-trabalhos-curso" class="page">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3>Gráfico de Controlo de Entregas</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-trabalhos"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-historico" class="page">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3>Histórico de Trabalhos e Entregas</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Entrega</th><th>Estado</th><th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-historico"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PÁGINA: DETALHE SERVIÇO (CONSULTA) -->
+                <div id="page-detalhe-servico" class="page">
+                    <div class="card form-card">
+                        <h3>
+                            <button class="btn small-btn secondary-btn" onclick="switchPage('historico')" style="margin-right:10px;"><i class="fa-solid fa-arrow-left"></i></button>
+                            <i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Ficha do Serviço (Consulta)
+                        </h3>
+
+                        <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:var(--primary);">Informação do Serviço</h5>
+                        <div class="grid-3">
+                            <div class="input-group"><label>Cliente</label><input type="text" id="dv-cliente" disabled></div>
+                            <div class="input-group"><label>Guia de Remessa</label><input type="text" id="dv-guia" disabled></div>
+                            <div class="input-group"><label>Quantidade</label><input type="text" id="dv-qty" disabled></div>
+                            <div class="input-group"><label>Data de Entrada</label><input type="text" id="dv-entrada" disabled></div>
+                            <div class="input-group"><label>Data de Entrega</label><input type="text" id="dv-entrega" disabled></div>
+                            <div class="input-group"><label>Estado</label><input type="text" id="dv-estado" disabled></div>
+                        </div>
+                        <div class="input-group mt-1"><label>Observações do Serviço</label><textarea id="dv-observacoes" rows="2" disabled></textarea></div>
+
+                        <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:#555;">Identificação da Peça</h5>
+                        <div class="grid-3">
+                            <div class="input-group"><label>Ref</label><input type="text" id="dv-ref" disabled></div>
+                            <div class="input-group"><label>Ref Interna</label><input type="text" id="dv-ref-interna" disabled></div>
+                            <div class="input-group"><label>Designação</label><input type="text" id="dv-nome" disabled></div>
+                            <div class="input-group"><label>Peso (kg)</label><input type="text" id="dv-peso" disabled></div>
+                            <div class="input-group"><label>Peças/Ciclo</label><input type="text" id="dv-ciclo" disabled></div>
+                            <div class="input-group"><label>Potência (A)</label><input type="text" id="dv-potencia" disabled></div>
+                        </div>
+
+                        <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:#555;">Dimensões (mm)</h5>
+                        <div class="grid-4">
+                            <div class="input-group"><label>Comprimento</label><input type="text" id="dv-comprimento" disabled></div>
+                            <div class="input-group"><label>Altura</label><input type="text" id="dv-altura" disabled></div>
+                            <div class="input-group"><label>Largura</label><input type="text" id="dv-largura" disabled></div>
+                            <div class="input-group"><label>Diâmetro</label><input type="text" id="dv-diametro" disabled></div>
+                        </div>
+
+                        <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:#555;">Parâmetros Químicos</h5>
+                        <div class="grid-3">
+                            <div class="input-group"><label>Área (dm²)</label><input type="text" id="dv-dm2" disabled></div>
+                            <div class="input-group"><label>Desengorduramento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-deseng" disabled><input style="flex:1;" type="text" id="dv-deseng-tempo" disabled></div></div>
+                            <div class="input-group"><label>Decapagem</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-decap" disabled><input style="flex:1;" type="text" id="dv-decap-tempo" disabled></div></div>
+                            <div class="input-group"><label>Eletropolimento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-electro" disabled><input style="flex:1;" type="text" id="dv-electro-tempo" disabled></div></div>
+                            <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-passiv" disabled><input style="flex:1;" type="text" id="dv-passiv-tempo" disabled></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-pecas" class="page">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3>Base de Dados - Peças</h3>
+                            <button class="btn small-btn primary-btn editor-only" id="btn-nova-peca">Nova Peça / Cliente</button>
+                        </div>
+                        <div id="form-nova-peca" class="hidden form-card mt-1 mb-2">
+                            <h4 style="color: var(--primary); margin-bottom: 1rem;"><i class="fa-solid fa-cube"></i> Registar Nova Peça</h4>
+                            
+                            <h5 style="margin-bottom: 0.5rem; color: #555;">Detalhes Base</h5>
+                            <div class="grid-3">
+                                <div class="input-group"><label>Ref *</label><input type="text" id="np-ref"></div>
+                                <div class="input-group"><label>Designação *</label><input type="text" id="np-nome"></div>
+                                <div class="input-group">
+                                    <label>Cliente *</label>
+                                    <div style="display:flex; gap:10px;">
+                                        <select id="np-cliente"></select>
+                                        <button class="btn secondary-btn" type="button" id="btn-novo-cliente">+</button>
+                                    </div>
+                                </div>
+                                <div class="input-group"><label>Ref Interna</label><input type="text" id="np-ref-interna" placeholder="Ref. interna da empresa"></div>
+                                <div class="input-group"><label>Peso (kg)</label><input type="text" id="np-peso" placeholder="Ex: 0,5 ou 3,2"></div>
+                                <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="np-ciclo"></div>
+                                <div class="input-group"><label>Potência (A)</label><input type="text" id="np-potencia"></div>
+                            </div>
+
+                            <h5 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #555;">Dimensões (mm)</h5>
+                            <div class="grid-4">
+                                <div class="input-group"><label>Comprimento</label><input type="text" id="np-comprimento" placeholder="mm"></div>
+                                <div class="input-group"><label>Altura</label><input type="text" id="np-altura" placeholder="mm"></div>
+                                <div class="input-group"><label>Largura</label><input type="text" id="np-largura" placeholder="mm"></div>
+                                <div class="input-group"><label>Diâmetro</label><input type="text" id="np-diametro" placeholder="mm"></div>
+                            </div>
+
+                            <h5 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #555;">Parâmetros Técnicos / Químicos</h5>
+                            <div class="grid-3">
+                                <div class="input-group"><label>Área (dm²)</label><input type="text" id="np-dm2"></div>
+                                <div class="input-group"><label>Desengorduramento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="np-deseng" value="Smart Cleaner"><input style="flex:1;" type="text" id="np-deseng-tempo" value="10"></div></div>
+                                <div class="input-group"><label>Decapagem</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="np-decap" value="Ecoinox"><input style="flex:1;" type="text" id="np-decap-tempo" value="1h"></div></div>
+                                <div class="input-group"><label>Eletropolimento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="np-electro" value="LE2000"><input style="flex:1;" type="text" id="np-electro-tempo" value="10"></div></div>
+                                <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="np-passiv" value="Passivante P"><input style="flex:1;" type="text" id="np-passiv-tempo" value="10"></div></div>
+                            </div>
+
+                            <h5 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--primary);"><i class="fa-solid fa-bolt"></i> Criar 1º Trabalho em Curso (Opcional)</h5>
+                            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Preencha a Guia para criar de imediato uma ordem nos Trabalhos em Curso.</p>
+                            <div class="grid-4">
+                                <div class="input-group"><label>Guia de Remessa</label><input type="text" id="np-guia" placeholder="Opcional"></div>
+                                <div class="input-group"><label>Quantidade</label><input type="number" id="np-quantidade" placeholder="Ex: 50"></div>
+                                <div class="input-group"><label>Data de Entrada</label><input type="date" id="np-data-entrada"></div>
+                                <div class="input-group"><label>Saída Prevista</label><input type="date" id="np-data-prevista"></div>
+                            </div>
+                            <div class="input-group mt-1"><label>Observações da Peça / 1º Serviço</label><input type="text" id="np-observacoes" placeholder="Opcional"></div>
+
+                            <div class="form-actions mt-1">
+                                <button class="btn primary-btn" id="btn-guardar-peca">Guardar Nova Peça</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Ref</th><th>Ref Interna</th><th>Designação</th><th>Cliente</th><th>Peso</th></tr></thead>
+                                <tbody id="table-pecas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PÁGINA: CLIENTES -->
+                <div id="page-clientes" class="page">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3><i class="fa-solid fa-users"></i> Clientes Registados</h3>
+                            <button class="btn small-btn primary-btn editor-only" id="btn-novo-cliente-pg">+ Novo Cliente</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Nome do Cliente</th><th>Peças</th><th>Em Curso</th><th>Concluídos</th><th>Ações</th></tr></thead>
+                                <tbody id="table-clientes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PÁGINA: DETALHE CLIENTE -->
+                <div id="page-cliente-detalhe" class="page">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3>
+                                <button class="btn small-btn secondary-btn" onclick="switchPage('clientes')" style="margin-right:10px;"><i class="fa-solid fa-arrow-left"></i></button>
+                                <i class="fa-solid fa-user-circle" style="color:var(--primary);"></i>
+                                <span id="cliente-detalhe-nome" style="margin-left:8px;">Cliente</span>
+                            </h3>
+                        </div>
+
+                        <!-- Stats do cliente -->
+                        <div class="stats-grid" style="margin-bottom:1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-blue"><i class="fa-solid fa-cubes"></i></div>
+                                <div class="stat-details"><h3>Peças Registadas</h3><p id="cd-stat-pecas">0</p></div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-purple"><i class="fa-solid fa-spinner"></i></div>
+                                <div class="stat-details"><h3>Em Curso</h3><p id="cd-stat-curso">0</p></div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-green"><i class="fa-solid fa-check-double"></i></div>
+                                <div class="stat-details"><h3>Concluídos</h3><p id="cd-stat-historico">0</p></div>
+                            </div>
+                        </div>
+
+                        <!-- Trabalhos Em Curso -->
+                        <h4 style="color:var(--primary);margin-bottom:1rem;"><i class="fa-solid fa-list-check"></i> Trabalhos em Curso</h4>
+                        <div class="table-responsive" style="margin-bottom:2rem;">
+                            <table class="data-table">
+                                <thead><tr><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th></tr></thead>
+                                <tbody id="cd-table-curso"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Histórico -->
+                        <h4 style="color:var(--text-muted);margin-bottom:1rem;"><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Entregas</h4>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Entrega</th><th>Estado</th></tr></thead>
+                                <tbody id="cd-table-historico"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+    <div id="toast-container"></div>
+    <script src="app.js"></script>
+</body>
+</html>
