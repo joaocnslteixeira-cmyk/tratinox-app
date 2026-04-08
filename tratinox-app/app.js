@@ -480,6 +480,7 @@ window.abrirEdicao = function(servicoId) {
     // Datas do serviço
     document.getElementById('ed-data-entrada').value = s.dataEntrada || '';
     document.getElementById('ed-data-prevista').value = s.dataPrevista || '';
+    document.getElementById('ed-quantidade').value = s.qty || '';
     
     const realGroup = document.getElementById('ed-data-real-group');
     if (s.status === 'Concluído') {
@@ -528,6 +529,7 @@ window.guardarEdicao = function() {
         s.observacoes = document.getElementById('ed-observacoes').value;
         s.dataEntrada = document.getElementById('ed-data-entrada').value;
         s.dataPrevista = document.getElementById('ed-data-prevista').value;
+        s.qty = parseInt(document.getElementById('ed-quantidade').value) || s.qty;
         s.clienteId = parseInt(document.getElementById('ed-cliente').value);
         if (s.status === 'Concluído') {
             s.dataReal = document.getElementById('ed-data-real').value;
