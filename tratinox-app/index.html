@@ -173,10 +173,11 @@
                         <input type="hidden" id="ed-servico-id">
                         <input type="hidden" id="ed-peca-id">
 
-                        <div class="grid-3 mt-1">
+                        <div class="grid-4 mt-1">
                             <div class="input-group"><label>Cliente</label><select id="ed-cliente"></select></div>
                             <div class="input-group"><label>Data de Entrada</label><input type="date" id="ed-data-entrada"></div>
                             <div class="input-group"><label>Saída Prevista</label><input type="date" id="ed-data-prevista"></div>
+                            <div class="input-group" id="ed-data-real-group" style="display:none;"><label>Entrega Efetiva</label><input type="date" id="ed-data-real" style="border-color:var(--success);"></div>
                         </div>
 
                         <h5 style="margin-top: 1rem; color: var(--primary);">Observações do Serviço Atualizado</h5>
@@ -228,6 +229,12 @@
                     <div class="card">
                         <div class="card-header-flex">
                             <h3>Histórico de Trabalhos e Entregas</h3>
+                            <div class="filter-group">
+                                <label style="font-size: 0.8rem; color: #888;">Filtrar por Cliente:</label>
+                                <select id="history-filter-cliente" onchange="refreshData('historico')" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
+                                    <option value="all">Todos os Clientes</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="table-responsive">
                             <table class="data-table">

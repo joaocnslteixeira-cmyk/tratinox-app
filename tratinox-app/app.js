@@ -143,6 +143,7 @@ const switchPage = (id) => {
 function enforceRoles() {
     const isE = currentUser.role === 'EDITOR';
     const isJoao = currentUser.username === 'joaoteixeira';
+    const isAdmin = isJoao || currentUser.username === 'carina';
     
     document.querySelectorAll('.editor-only').forEach(el => {
         el.style.display = isE ? '' : 'none';
@@ -151,6 +152,10 @@ function enforceRoles() {
 
     document.querySelectorAll('.joao-only').forEach(el => {
         el.style.display = isJoao ? '' : 'none';
+    });
+    
+    document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = isAdmin ? '' : 'none';
     });
 }
 
@@ -220,8 +225,35 @@ function refreshData(id) {
     }
     if(id === 'historico') {
         const tbody = document.getElementById('table-historico');
+        const filterSelect = document.getElementById('history-filter-cliente');
+        const filterVal = filterSelect ? filterSelect.value : 'all';
+        
+        // Atualizar lista de clientes no filtro (apenas os que têm histórico)
+        if(filterSelect) {
+            const currentVal = filterSelect.value;
+            const histClients = (db.clientes || []).filter(c => 
+                (db.servicos || []).some(s => s.status === 'Concluído' && s.clienteId === c.id)
+            ).sort((a,b) => a.name.localeCompare(b.name));
+            
+            filterSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+            histClients.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                filterSelect.appendChild(opt);
+            });
+            filterSelect.value = currentVal;
+        }
+
         tbody.innerHTML = '';
-        (db.servicos || []).filter(s => s.status === 'Concluído').forEach(s => {
+        let servicosMostrados = (db.servicos || []).filter(s => s.status === 'Concluído');
+        
+        if(filterVal !== 'all') {
+            const cid = parseInt(filterVal);
+            servicosMostrados = servicosMostrados.filter(s => s.clienteId === cid);
+        }
+
+        servicosMostrados.forEach(s => {
             const p = (db.pecas || []).find(x => x.id === s.partId);
             const c = (db.clientes || []).find(x => x.id === s.clienteId);
             const isLate = s.dataPrevista < s.dataReal;
@@ -229,9 +261,15 @@ function refreshData(id) {
                 <td>${c?c.name:'-'}</td><td>${s.guia}</td><td>${p?p.name:'-'}</td><td>${s.qty}</td>
                 <td>${s.dataEntrada}</td><td>${s.dataReal}</td>
                 <td><span class="badge ${isLate?'danger':'success'}">${isLate?'NÃO CUMPRIU':'NO PRAZO'}</span></td>
-                <td onclick="event.stopPropagation()"><button class="btn small-btn danger-btn editor-only" onclick="eliminarHistorico(${s.id})" style="background-color:#e74c3c;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td>
+                <td onclick="event.stopPropagation()" style="display:flex;gap:6px;">
+                    <button class="btn small-btn admin-only" onclick="abrirEdicao(${s.id})" title="Editar Registo" style="background-color:#475569;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn small-btn admin-only" onclick="reabrirServico(${s.id})" title="Retomar Produção" style="background-color:#f59e0b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button class="btn small-btn danger-btn editor-only" onclick="eliminarHistorico(${s.id})" style="background-color:#e74c3c;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                </td>
             </tr>`;
         });
+        if(!servicosMostrados.length) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color: #888;">Nenhum registo encontrado para este filtro.</td></tr>';
+        enforceRoles();
     }
     if(id === 'pecas') {
         const sCliente = document.getElementById('np-cliente');
@@ -274,6 +312,20 @@ window.concluirServico = function(id) {
         s.status = 'Concluído'; s.dataReal = new Date().toISOString().split('T')[0];
         saveDB(db); showToast('Serviço concluído na Nuvem!');
         if(currentPage === 'trabalhos-curso') refreshData('trabalhos-curso');
+    }
+};
+
+window.reabrirServico = function(id) {
+    if(currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') return showToast('Apenas administradores podem retomar trabalhos.');
+    if(!confirm("Deseja colocar este trabalho novamente Em Curso? (Será removido do Histórico)")) return;
+    const db = getDB();
+    const s = (db.servicos || []).find(x => x.id === id);
+    if(s) {
+        s.status = 'Em Curso';
+        s.dataReal = null;
+        saveDB(db);
+        showToast('Trabalho retomado com sucesso! ✅');
+        refreshData(currentPage);
     }
 };
 
@@ -388,13 +440,18 @@ window.abrirCliente = function(clienteId) {
                 <td>${s.guia}</td><td>${p?p.name:'-'}</td><td>${s.qty}</td>
                 <td>${s.dataEntrada}</td><td>${s.dataReal || '-'}</td>
                 <td><span class="badge ${isLate?'danger':'success'}">${isLate?'NÃO CUMPRIU':'NO PRAZO'}</span></td>
+                <td onclick="event.stopPropagation()" style="display:flex;gap:6px;">
+                    <button class="btn small-btn admin-only" onclick="abrirEdicao(${s.id})" title="Editar Registo" style="background-color:#475569;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn small-btn admin-only" onclick="reabrirServico(${s.id})" title="Retomar Produção" style="background-color:#f59e0b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-rotate-left"></i></button>
+                </td>
             </tr>`;
         });
     } else {
-        tbodyHist.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Sem histórico para este cliente.</td></tr>';
+        tbodyHist.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Sem histórico para este cliente.</td></tr>';
     }
     
     switchPage('cliente-detalhe');
+    enforceRoles();
 };
 
 window.abrirEdicao = function(servicoId) {
@@ -402,6 +459,11 @@ window.abrirEdicao = function(servicoId) {
     const db = getDB();
     const s = (db.servicos || []).find(x => x.id === servicoId);
     if(!s) return;
+    
+    if (s.status === 'Concluído' && currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') {
+        return showToast('Admin apenas. João e Carina podem editar Histórico.');
+    }
+
     const p = (db.pecas || []).find(x => x.id === s.partId);
     
     // Preencher IDs ocultos
@@ -418,6 +480,14 @@ window.abrirEdicao = function(servicoId) {
     // Datas do serviço
     document.getElementById('ed-data-entrada').value = s.dataEntrada || '';
     document.getElementById('ed-data-prevista').value = s.dataPrevista || '';
+    
+    const realGroup = document.getElementById('ed-data-real-group');
+    if (s.status === 'Concluído') {
+        realGroup.style.display = 'block';
+        document.getElementById('ed-data-real').value = s.dataReal || '';
+    } else {
+        realGroup.style.display = 'none';
+    }
 
     // Observações do serviço
     document.getElementById('ed-observacoes').value = s.observacoes || '';
@@ -459,6 +529,9 @@ window.guardarEdicao = function() {
         s.dataEntrada = document.getElementById('ed-data-entrada').value;
         s.dataPrevista = document.getElementById('ed-data-prevista').value;
         s.clienteId = parseInt(document.getElementById('ed-cliente').value);
+        if (s.status === 'Concluído') {
+            s.dataReal = document.getElementById('ed-data-real').value;
+        }
     }
     
     // Atualizar Peça Mestre (Opção A — atualiza para toda a gente no futuro)
@@ -485,8 +558,9 @@ window.guardarEdicao = function() {
     }
     
     saveDB(db);
-    showToast('Alterações guardadas! Peça Mestre e Observações atualizadas.');
-    switchPage('trabalhos-curso');
+    showToast('Alterações guardadas com sucesso!');
+    if (s && s.status === 'Concluído') switchPage('historico');
+    else switchPage('trabalhos-curso');
 };
 
 document.addEventListener('DOMContentLoaded', () => {
