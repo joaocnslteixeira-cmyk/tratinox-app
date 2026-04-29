@@ -99,16 +99,16 @@ function fixPecasLegadas(db) {
     if (!db || !db.pecas) return db;
     let changed = false;
     db.pecas = db.pecas.map(p => {
-        // Caso 1: name começa com '- ' (ex: '- Molduras Espelho') — traço residual
-        if (p.name && p.name.startsWith('- ')) {
-            const cleanName = p.name.slice(2).trim();
-            // ref provavelmente já contém o nome completo (era igual ao descP)
-            // Limpa apenas o name
-            changed = true;
-            return { ...p, name: cleanName };
+        let pChanged = false;
+        if (p.name && /^- ?/.test(p.name)) {
+            p.name = p.name.replace(/^- ?/, '').trim();
+            pChanged = true;
         }
-        // Caso 2: ref === name (peça criada sem hífen, mas ficou duplicada)
-        // Não há nada a corrigir neste caso, só mantém
+        if (p.ref && /^- ?/.test(p.ref)) {
+            p.ref = p.ref.replace(/^- ?/, '').trim();
+            pChanged = true;
+        }
+        if (pChanged) changed = true;
         return p;
     });
     if (changed) {
@@ -671,8 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pecas = (db.pecas || []).filter(p => p.clienteId === found.id);
                     pecas.forEach(p => {
                         const opt = document.createElement('option');
-                        // Se a peça tem ref E nome distintos, mostra "REF - NOME", senão mostra "- NOME" (a pedido do utilizador)
-                        opt.value = (p.ref && p.name && p.ref !== p.name) ? `${p.ref} - ${p.name}` : `- ${p.name || p.ref}`;
+                        // Se a peça tem ref E nome distintos, mostra "REF - NOME", senão só o nome
+                        opt.value = (p.ref && p.name && p.ref !== p.name) ? `${p.ref} - ${p.name}` : (p.name || p.ref);
                         dlPecas.appendChild(opt);
                     });
                 }
@@ -691,14 +691,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let found = null;
             if(cid) {
-                const valLow = val.toLowerCase().replace(/^- /, '').trim();
+                const valLow = val.toLowerCase().replace(/^- ?/, '').trim();
                 found = (db.pecas || []).find(p => {
                     if (p.clienteId !== cid) return false;
+                    const refLow = (p.ref || '').toLowerCase().replace(/^- ?/, '').trim();
+                    const nomeLow = (p.name || '').toLowerCase().replace(/^- ?/, '').trim();
                     const fullRefNome = (p.ref && p.name && p.ref !== p.name)
-                        ? `${p.ref} - ${p.name}`.toLowerCase()
-                        : (p.name || p.ref || '').toLowerCase();
-                    const refLow = (p.ref || '').toLowerCase();
-                    const nomeLow = (p.name || '').toLowerCase();
+                        ? `${refLow} - ${nomeLow}`
+                        : (nomeLow || refLow || '');
+                    
                     return fullRefNome === valLow || refLow === valLow || nomeLow === valLow;
                 });
             }
@@ -749,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. CRIAR NOVA PEÇA SE NECESSÁRIO
         const parsePeso = (v) => parseFloat(v.toString().replace(',', '.')) || 0;
         if(!pid) {
-            const descP = nsInpPeca.value.trim();
+            const descP = nsInpPeca.value.trim().replace(/^- ?/, '');
             if(!descP) return showToast("Por favor, identifique a Peça (Ref ou Nome).");
             pid = Date.now() + 1;
             if(!db.pecas) db.pecas = [];
