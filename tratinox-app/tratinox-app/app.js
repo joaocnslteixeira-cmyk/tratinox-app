@@ -305,7 +305,10 @@ function refreshData(id) {
         tbody.innerHTML = '';
         (db.pecas || []).forEach(p => {
             const c = (db.clientes || []).find(x => x.id === p.clienteId);
-            tbody.innerHTML += `<tr><td>${p.ref}</td><td>${p.refInterna||'-'}</td><td>${p.name}</td><td>${c?c.name:'-'}</td><td>${p.peso} kg</td></tr>`;
+            tbody.innerHTML += `<tr>
+                <td>${p.ref}</td><td>${p.refInterna||'-'}</td><td>${p.name}</td><td>${c?c.name:'-'}</td><td>${p.peso} kg</td>
+                <td class="joao-only"><button class="btn small-btn danger-btn" onclick="eliminarPeca(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`;
         });
     }
     if(id === 'clientes') {
@@ -419,6 +422,19 @@ window.eliminarCliente = function(id) {
     saveDB(db);
     showToast('Cliente eliminado!');
     refreshData('clientes');
+};
+
+window.eliminarPeca = function(id) {
+    if(currentUser.username !== 'joaoteixeira') return showToast('Apenas o João Teixeira pode eliminar peças.');
+    const db = getDB();
+    const p = (db.pecas || []).find(x => x.id === id);
+    const temServicos = (db.servicos || []).some(s => s.partId === id && s.status === 'Em Curso');
+    if(temServicos) return showToast('Não pode eliminar: existem trabalhos Em Curso com esta peça!');
+    if(!confirm(`Eliminar definitivamente a peça "${p?.name || p?.ref}"?`)) return;
+    db.pecas = (db.pecas || []).filter(x => x.id !== id);
+    saveDB(db);
+    showToast('Peça eliminada da base de dados!');
+    refreshData('pecas');
 };
 
 window.abrirCliente = function(clienteId) {
@@ -655,8 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pecas = (db.pecas || []).filter(p => p.clienteId === found.id);
                     pecas.forEach(p => {
                         const opt = document.createElement('option');
-                        // Se a peça tem ref E nome distintos, mostra "REF - NOME", senão só o nome
-                        opt.value = (p.ref && p.name && p.ref !== p.name) ? `${p.ref} - ${p.name}` : (p.name || p.ref);
+                        // Se a peça tem ref E nome distintos, mostra "REF - NOME", senão mostra "- NOME" (a pedido do utilizador)
+                        opt.value = (p.ref && p.name && p.ref !== p.name) ? `${p.ref} - ${p.name}` : `- ${p.name || p.ref}`;
                         dlPecas.appendChild(opt);
                     });
                 }
@@ -675,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let found = null;
             if(cid) {
-                const valLow = val.toLowerCase();
+                const valLow = val.toLowerCase().replace(/^- /, '').trim();
                 found = (db.pecas || []).find(p => {
                     if (p.clienteId !== cid) return false;
                     const fullRefNome = (p.ref && p.name && p.ref !== p.name)
