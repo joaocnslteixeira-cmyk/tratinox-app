@@ -306,7 +306,7 @@ function refreshData(id) {
         (db.pecas || []).forEach(p => {
             const c = (db.clientes || []).find(x => x.id === p.clienteId);
             tbody.innerHTML += `<tr>
-                <td>${p.ref}</td><td>${p.refInterna||'-'}</td><td>${p.name}</td><td>${c?c.name:'-'}</td><td>${p.peso} kg</td>
+                <td>${p.ref}</td><td>${p.refInterna||'-'}</td><td>${p.name}</td><td>${c?c.name:'-'}</td><td>${p.peso} kg</td><td>${p.ciclo||'0'}</td>
                 <td class="joao-only"><button class="btn small-btn danger-btn" onclick="eliminarPeca(${p.id})"><i class="fa-solid fa-trash"></i></button></td>
             </tr>`;
         });
@@ -540,6 +540,7 @@ window.abrirEdicao = function(servicoId) {
     if(p) {
         document.getElementById('ed-dm2').value = p.dm2 || '';
         document.getElementById('ed-potencia').value = p.potencia || '';
+        document.getElementById('ed-ciclo').value = p.ciclo || '';
         document.getElementById('ed-peso').value = p.peso || '';
         document.getElementById('ed-ref-interna').value = p.refInterna || '';
         document.getElementById('ed-comprimento').value = p.comprimento || '';
@@ -587,6 +588,7 @@ window.guardarEdicao = function() {
         p.clienteId = parseInt(document.getElementById('ed-cliente').value);
         p.dm2 = document.getElementById('ed-dm2').value;
         p.potencia = parseFloat(document.getElementById('ed-potencia').value) || p.potencia;
+        p.ciclo = parseInt(document.getElementById('ed-ciclo').value) || 0;
         p.peso = parsePeso(document.getElementById('ed-peso').value) || p.peso;
         p.refInterna = document.getElementById('ed-ref-interna').value;
         p.comprimento = document.getElementById('ed-comprimento').value;
@@ -716,6 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="input-group"><label>Área (dm²)</label><input type="text" id="ns-p-dm2" value="${p.dm2||''}"></div>
                 <div class="input-group"><label>Peso (kg)</label><input type="text" id="ns-p-peso" value="${p.peso||0}"></div>
                 <div class="input-group"><label>Potência (A)</label><input type="text" id="ns-p-potencia" value="${p.potencia||0}"></div>
+                <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="ns-p-ciclo" value="${p.ciclo||0}"></div>
                 <div class="input-group"><label>Comp. (mm)</label><input type="text" id="ns-p-comp" value="${p.comprimento||''}"></div>
                 <div class="input-group"><label>Alt. (mm)</label><input type="text" id="ns-p-alt" value="${p.altura||''}"></div>
                 <div class="input-group"><label>Larg. (mm)</label><input type="text" id="ns-p-larg" value="${p.largura||''}"></div>
@@ -769,6 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 dm2: document.getElementById('ns-p-dm2').value,
                 peso: parsePeso(document.getElementById('ns-p-peso').value),
                 potencia: parseFloat(document.getElementById('ns-p-potencia').value) || 0,
+                ciclo: parseInt(document.getElementById('ns-p-ciclo').value) || 0,
                 comprimento: document.getElementById('ns-p-comp').value,
                 altura: document.getElementById('ns-p-alt').value,
                 largura: document.getElementById('ns-p-larg').value,
@@ -790,6 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 p.dm2 = document.getElementById('ns-p-dm2').value;
                 p.peso = parsePeso(document.getElementById('ns-p-peso').value);
                 p.potencia = parseFloat(document.getElementById('ns-p-potencia').value) || 0;
+                p.ciclo = parseInt(document.getElementById('ns-p-ciclo').value) || 0;
                 p.comprimento = document.getElementById('ns-p-comp').value;
                 p.altura = document.getElementById('ns-p-alt').value;
                 p.largura = document.getElementById('ns-p-larg').value;
