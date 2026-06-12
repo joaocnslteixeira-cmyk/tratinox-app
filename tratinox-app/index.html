@@ -105,6 +105,7 @@
                                         <th style="min-width:140px;">Decapagem</th>
                                         <th style="min-width:140px;">Eletropolimento</th>
                                         <th style="min-width:140px;">Passivação</th>
+                                        <th title="Controlo de Qualidade">QC</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-monitor"></tbody>
@@ -206,6 +207,11 @@
                             <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-passiv"><input style="flex:1;" type="text" id="ed-passiv-tempo"></div></div>
                         </div>
                         
+                        <div class="input-group mt-1" style="display:flex;align-items:center;gap:14px;padding:0.9rem 1rem;background:rgba(16,185,129,0.07);border-radius:8px;border:1px solid rgba(16,185,129,0.25);">
+                            <input type="checkbox" id="ed-qualidade-ok" style="width:20px;height:20px;accent-color:#10b981;cursor:pointer;">
+                            <label style="margin:0;font-weight:600;color:#059669;cursor:pointer;" for="ed-qualidade-ok"><i class="fa-solid fa-shield-check"></i> Controlo de Qualidade OK</label>
+                            <small style="color:#888;margin-left:auto;font-size:0.8rem;">(apenas João e Carina)</small>
+                        </div>
                         <div class="form-actions mt-2">
                             <button class="btn primary-btn editor-only" onclick="guardarEdicao()">Guardar Alterações Reais</button>
                         </div>
@@ -221,7 +227,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th>Ações</th>
+                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th title="Controlo de Qualidade OK">QC ✅</th><th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-trabalhos"></tbody>
@@ -236,7 +242,7 @@
                             <h3>Histórico de Trabalhos e Entregas</h3>
                             <div class="filter-group">
                                 <label style="font-size: 0.8rem; color: #888;">Filtrar por Cliente:</label>
-                                <select id="history-filter-cliente" onchange="refreshData('historico')" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
+                                <select id="history-filter-cliente" onchange="filtrarHistorico()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
                                     <option value="all">Todos os Clientes</option>
                                 </select>
                             </div>
@@ -251,6 +257,7 @@
                                 <tbody id="table-historico"></tbody>
                             </table>
                         </div>
+                        <div id="hist-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:0.8rem 1rem;border-top:1px solid var(--border-color);"></div>
                     </div>
                 </div>
 
@@ -298,6 +305,10 @@
                             <div class="input-group"><label>Decapagem</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-decap" disabled><input style="flex:1;" type="text" id="dv-decap-tempo" disabled></div></div>
                             <div class="input-group"><label>Eletropolimento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-electro" disabled><input style="flex:1;" type="text" id="dv-electro-tempo" disabled></div></div>
                             <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-passiv" disabled><input style="flex:1;" type="text" id="dv-passiv-tempo" disabled></div></div>
+                        </div>
+                        <div class="input-group mt-1" style="display:flex;align-items:center;gap:14px;padding:0.9rem 1rem;background:rgba(16,185,129,0.07);border-radius:8px;border:1px solid rgba(16,185,129,0.2);">
+                            <input type="checkbox" id="dv-qualidade-ok" disabled style="width:20px;height:20px;accent-color:#10b981;">
+                            <label style="margin:0;font-weight:600;color:#059669;"><i class="fa-solid fa-shield-check"></i> Controlo de Qualidade OK</label>
                         </div>
                     </div>
                 </div>
