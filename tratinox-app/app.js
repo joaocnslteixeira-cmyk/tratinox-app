@@ -589,7 +589,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         dlPecas.appendChild(opt);
                     });
                 }
-            } else nsInpPeca.disabled = true;
+            } else {
+                // Campo 1 apagado: limpar campo 2 e esconder formulário
+                nsInpPeca.disabled = true;
+                nsInpPeca.value = '';
+                document.getElementById('ns-part-id').value = '';
+                document.getElementById('new-service-form').classList.add('hidden');
+            }
         };
     }
     if(nsInpPeca) {
@@ -695,9 +701,16 @@ document.addEventListener('DOMContentLoaded', () => {
             status: document.getElementById('ns-estado').value, dataReal: null,
             observacoes: document.getElementById('ns-observacoes').value || ''
         });
-        saveDB(db); showToast('Guardado!'); e.target.reset(); 
+        saveDB(db); showToast('Guardado!'); e.target.reset();
         document.getElementById('new-service-form').classList.add('hidden');
-        nsInpPeca.disabled = true; refreshData('dashboard');
+        // Limpar campos 1 e 2 para ficha nova
+        nsInpCliente.value = '';
+        nsInpPeca.value = '';
+        nsInpPeca.disabled = true;
+        document.getElementById('ns-cliente-id').value = '';
+        document.getElementById('ns-part-id').value = '';
+        document.getElementById('ns-parametros').innerHTML = '';
+        refreshData('dashboard');
     };
 
     document.getElementById('btn-cancel-service').onclick = () => { 
