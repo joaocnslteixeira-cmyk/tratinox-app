@@ -153,3 +153,38 @@ body { font-family: var(--font-family); background: var(--bg-dark); color: var(-
 .monitor-table td:nth-child(4) {
     background: rgba(59, 130, 246, 0.08); /* Ligeiro destaque na coluna central */
 }
+
+/* Agrupamento por Cliente nos Trabalhos em Curso */
+.client-group-header {
+    background: #f8fafc;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.client-group-header:hover {
+    background: #f1f5f9;
+}
+.client-group-header td {
+    padding: 1rem !important;
+    color: var(--primary);
+    font-size: 1rem;
+    border-bottom: 2px solid rgba(37, 99, 235, 0.1) !important;
+}
+.client-group-header i {
+    margin-right: 10px;
+    transition: transform 0.3s;
+    width: 14px;
+    display: inline-block;
+    text-align: center;
+}
+.client-group-header.expanded i {
+    transform: rotate(90deg);
+}
+.client-group-header .badge {
+    margin-left: 10px;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary);
+}
+.work-row-hidden {
+    display: none;
+}
