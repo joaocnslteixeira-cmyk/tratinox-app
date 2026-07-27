@@ -27,7 +27,8 @@ const INITIAL_DATA = {
         { username: 'encarnacaoloureiro', password: 'encarnacaoloureiro123', role: 'VIEWER', name: 'Encarnação Loureiro' },
         { username: 'cristinaencarnacao', password: 'cristinaencarnacao123', role: 'VIEWER', name: 'Cristina Encarnação' },
         { username: 'monicaencarnacao', password: 'monicaencarnacao123', role: 'VIEWER', name: 'Mónica Encarnação' },
-        { username: 'carlanunes', password: 'carlanunes123', role: 'VIEWER', name: 'Carla Nunes' }
+        { username: 'carlanunes', password: 'carlanunes123', role: 'VIEWER', name: 'Carla Nunes' },
+        { username: 'joaocarneiro', password: 'joaocarneiro123', role: 'EDITOR', name: 'João Carneiro' }
     ],
     clientes: [],
     pecas: [],
