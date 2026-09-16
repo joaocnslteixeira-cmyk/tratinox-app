@@ -47,6 +47,7 @@
                 <li data-target="novo-servico"><i class="fa-solid fa-plus-circle"></i> Novo Serviço</li>
                 <li data-target="trabalhos-curso"><i class="fa-solid fa-list-check"></i> Trabalhos em Curso</li>
                 <li data-target="historico"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</li>
+                <li data-target="ponto"><i class="fa-solid fa-clock"></i> Controlo de Ponto</li>
                 <li data-target="pecas"><i class="fa-solid fa-cubes"></i> Peças</li>
                 <li data-target="clientes"><i class="fa-solid fa-users"></i> Clientes</li>
             </ul>
@@ -375,6 +376,29 @@
                                                                 <thead><tr><th>Ref</th><th>Ref Interna</th><th>Designação</th><th>Cliente</th><th>Peso</th><th>Ciclo</th><th class="joao-only">Ações</th></tr></thead>
                                 <tbody id="table-pecas"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PÁGINA: CONTROLO DE PONTO -->
+                <div id="page-ponto" class="page">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3><i class="fa-solid fa-clock"></i> Controlo de Ponto (QR Code)</h3>
+                            <div class="filter-group">
+                                <label style="font-size: 0.8rem; color: #888;">Filtro de Data:</label>
+                                <input type="date" id="ponto-filter-data" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Colaborador</th><th><span class="badge" style="background:#d1fae5;color:#047857;">Entrada</span></th><th><span class="badge" style="background:#fef3c7;color:#b45309;">Saída Almoço</span></th><th><span class="badge" style="background:#dbeafe;color:#1d4ed8;">Entr. Almoço</span></th><th><span class="badge" style="background:#fee2e2;color:#b91c1c;">Saída</span></th></tr></thead>
+                                <tbody id="table-ponto"></tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">O QR Code fixo na parede deve apontar para o seguinte endereço:</p>
+                            <a href="../ponto-colaborador/index.html" target="_blank" class="btn secondary-btn" style="display:inline-block; text-decoration:none;"><i class="fa-solid fa-qrcode"></i> Abrir App dos Colaboradores (Teste)</a>
                         </div>
                     </div>
                 </div>

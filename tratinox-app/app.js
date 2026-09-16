@@ -310,6 +310,56 @@ function refreshData(id) {
         if(!(db.clientes || []).length) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Nenhum cliente registado ainda.</td></tr>';
         enforceRoles();
     }
+    if(id === 'ponto') {
+        refreshPonto();
+    }
+}
+
+window.refreshPonto = function() {
+    const tbody = document.getElementById('table-ponto');
+    const filterInput = document.getElementById('ponto-filter-data');
+    if (!filterInput.value) {
+        filterInput.value = new Date().toISOString().split('T')[0];
+    }
+    const filterDate = filterInput.value;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> A carregar dados...</td></tr>';
+    
+    if (dbRef && dbRef.parent) {
+        const pontoRef = dbRef.parent.child('ponto_registos');
+        pontoRef.orderByChild('date').equalTo(filterDate).once('value', (snap) => {
+            const records = [];
+            snap.forEach(child => { records.push(child.val()); });
+            
+            // Agrupar por funcionário
+            const empGroups = {};
+            records.forEach(r => {
+                if(!empGroups[r.empName]) empGroups[r.empName] = { entrada: '-', saida_almoco: '-', entrada_almoco: '-', saida: '-' };
+                
+                // Grava apenas o primeiro de entrada/regresso e último de saída, se houver vários (evita bugs de click duplo)
+                if (r.type === 'entrada' && empGroups[r.empName].entrada === '-') empGroups[r.empName].entrada = r.time.substring(0, 5);
+                if (r.type === 'saida_almoco' && empGroups[r.empName].saida_almoco === '-') empGroups[r.empName].saida_almoco = r.time.substring(0, 5);
+                if (r.type === 'entrada_almoco' && empGroups[r.empName].entrada_almoco === '-') empGroups[r.empName].entrada_almoco = r.time.substring(0, 5);
+                if (r.type === 'saida') empGroups[r.empName].saida = r.time.substring(0, 5); // Sobrescreve com a última saída
+            });
+            
+            tbody.innerHTML = '';
+            const names = Object.keys(empGroups).sort();
+            names.forEach(name => {
+                const p = empGroups[name];
+                tbody.innerHTML += `<tr>
+                    <td><strong>${name}</strong></td>
+                    <td style="color:#047857;font-weight:600;">${p.entrada}</td>
+                    <td style="color:#b45309;">${p.saida_almoco}</td>
+                    <td style="color:#1d4ed8;">${p.entrada_almoco}</td>
+                    <td style="color:#b91c1c;font-weight:600;">${p.saida}</td>
+                </tr>`;
+            });
+            
+            if(names.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Sem registos para o dia selecionado.</td></tr>';
+            }
+        });
+    }
 }
 
 window.concluirServico = function(id) {
@@ -379,32 +429,31 @@ window.verServico = function(servicoId) {
     document.getElementById('dv-entrega').value = s.dataReal || '-';
     document.getElementById('dv-estado').value = s.status || '';
     document.getElementById('dv-observacoes').value = s.observacoes || '';
-    // QC
     const dvQC = document.getElementById('dv-qualidade-ok');
     if(dvQC) dvQC.checked = s.qualidadeOk || false;
-    if(p) {
-        document.getElementById('dv-ref').value = p.ref || '';
-        document.getElementById('dv-ref-interna').value = p.refInterna || '';
-        document.getElementById('dv-nome').value = p.name || '';
-        document.getElementById('dv-peso').value = p.peso ? p.peso + ' kg' : '';
-        document.getElementById('dv-ciclo').value = p.ciclo || '';
-        document.getElementById('dv-potencia').value = p.potencia ? p.potencia + ' A' : '';
-        document.getElementById('dv-comprimento').value = p.comprimento || '';
-        document.getElementById('dv-altura').value = p.altura || '';
-        document.getElementById('dv-largura').value = p.largura || '';
-        document.getElementById('dv-diametro').value = p.diametro || '';
-        document.getElementById('dv-dm2').value = p.dm2 || '';
-        document.getElementById('dv-deseng').value = p.deseng || '';
-        document.getElementById('dv-deseng-tempo').value = p.desengTempo || '';
-        document.getElementById('dv-decap').value = p.decap || '';
-        document.getElementById('dv-decap-tempo').value = p.decapTempo || '';
-        document.getElementById('dv-electro').value = p.electro || '';
-        document.getElementById('dv-electro-tempo').value = p.electroTempo || '';
-        document.getElementById('dv-passiv').value = p.passiv || '';
-        document.getElementById('dv-passiv-tempo').value = p.passivTempo || '';
-    }
+    const snap = s.pieceSnapshot || {};
+    document.getElementById('dv-ref').value = snap.ref || (p ? p.ref : '');
+    document.getElementById('dv-ref-interna').value = snap.refInterna || (p ? p.refInterna : '');
+    document.getElementById('dv-nome').value = snap.name || (p ? p.name : '');
+    document.getElementById('dv-peso').value = snap.peso ? snap.peso + ' kg' : (p && p.peso ? p.peso + ' kg' : '');
+    document.getElementById('dv-ciclo').value = snap.ciclo || (p ? p.ciclo : '');
+    document.getElementById('dv-potencia').value = snap.potencia ? snap.potencia + ' A' : (p && p.potencia ? p.potencia + ' A' : '');
+    document.getElementById('dv-comprimento').value = snap.comprimento || (p ? p.comprimento : '');
+    document.getElementById('dv-altura').value = snap.altura || (p ? p.altura : '');
+    document.getElementById('dv-largura').value = snap.largura || (p ? p.largura : '');
+    document.getElementById('dv-diametro').value = snap.diametro || (p ? p.diametro : '');
+    document.getElementById('dv-dm2').value = p ? p.dm2 : '';
+    document.getElementById('dv-deseng').value = p ? p.deseng : '';
+    document.getElementById('dv-deseng-tempo').value = p ? p.desengTempo : '';
+    document.getElementById('dv-decap').value = p ? p.decap : '';
+    document.getElementById('dv-decap-tempo').value = p ? p.decapTempo : '';
+    document.getElementById('dv-electro').value = p ? p.electro : '';
+    document.getElementById('dv-electro-tempo').value = p ? p.electroTempo : '';
+    document.getElementById('dv-passiv').value = p ? p.passiv : '';
+    document.getElementById('dv-passiv-tempo').value = p ? p.passivTempo : '';
     switchPage('detalhe-servico');
 };
+
 
 window.eliminarCliente = function(id) {
     if(currentUser.role !== 'EDITOR') return showToast('Sem permissão.');
@@ -695,13 +744,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 p.passivTempo = document.getElementById('ns-p-passiv-t').value;
             }
         }
-        if(!db.servicos) db.servicos = [];
+        // Save a snapshot of the piece at creation time to prevent later edits affecting this service
+        const piece = (db.pecas || []).find(x => x.id === pid) || {};
+        const pieceSnapshot = {
+            ciclo: piece.ciclo,
+            peso: piece.peso,
+            potencia: piece.potencia,
+            refInterna: piece.refInterna,
+            dm2: piece.dm2,
+            comprimento: piece.comprimento,
+            altura: piece.altura,
+            largura: piece.largura,
+            diametro: piece.diametro,
+            deseng: piece.deseng,
+            desengTempo: piece.desengTempo,
+            decap: piece.decap,
+            decapTempo: piece.decapTempo,
+            electro: piece.electro,
+            electroTempo: piece.electroTempo,
+            passiv: piece.passiv,
+            passivTempo: piece.passivTempo,
+            name: piece.name,
+            ref: piece.ref
+        };
         db.servicos.push({
             id: Date.now() + 2, partId: pid, clienteId: cid,
             guia: document.getElementById('ns-guia').value, qty: parseInt(document.getElementById('ns-quantidade').value),
             dataEntrada: document.getElementById('ns-data-entrada').value, dataPrevista: document.getElementById('ns-data-prevista').value,
             status: document.getElementById('ns-estado').value, dataReal: null,
-            observacoes: document.getElementById('ns-observacoes').value || ''
+            observacoes: document.getElementById('ns-observacoes').value || '',
+            pieceSnapshot: pieceSnapshot
         });
         saveDB(db); showToast('Guardado!'); e.target.reset();
         document.getElementById('new-service-form').classList.add('hidden');
