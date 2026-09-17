@@ -510,6 +510,7 @@ window.abrirEdicao = function(servicoId) {
     if(!s) return;
     if (s.status === 'Concluído' && currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') return showToast('Admin apenas.');
     const p = (db.pecas || []).find(x => x.id === s.partId);
+    const snap = s.pieceSnapshot || {};
     document.getElementById('ed-servico-id').value = servicoId;
     document.getElementById('ed-peca-id').value = s.partId;
     const sCliente = document.getElementById('ed-cliente');
@@ -547,6 +548,7 @@ window.abrirEdicao = function(servicoId) {
         document.getElementById('ed-electro').value = p.electro || '';
         document.getElementById('ed-electro-tempo').value = p.electroTempo || '';
         document.getElementById('ed-passiv').value = p.passiv || '';
+document.getElementById('ed-ciclo').value = snap.ciclo || (p ? p.ciclo : '');
         document.getElementById('ed-passiv-tempo').value = p.passivTempo || '';
     }
     switchPage('edicao'); enforceRoles();
@@ -577,6 +579,7 @@ window.guardarEdicao = function() {
     if(p) {
         // Update piece snapshot for this service instead of global piece
         const snapshot = s.pieceSnapshot || {};
+        snapshot.ciclo = parseInt(document.getElementById('ed-ciclo').value) || snapshot.ciclo;
         snapshot.clienteId = parseInt(document.getElementById('ed-cliente').value);
         snapshot.dm2 = document.getElementById('ed-dm2').value;
         snapshot.potencia = parseFloat(document.getElementById('ed-potencia').value) || snapshot.potencia;
