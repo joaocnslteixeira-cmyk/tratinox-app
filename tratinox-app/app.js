@@ -575,23 +575,26 @@ window.guardarEdicao = function() {
     }
     const p = (db.pecas || []).find(x => x.id === pecaId);
     if(p) {
-        p.clienteId = parseInt(document.getElementById('ed-cliente').value);
-        p.dm2 = document.getElementById('ed-dm2').value;
-        p.potencia = parseFloat(document.getElementById('ed-potencia').value) || p.potencia;
-        p.peso = parseFloat(document.getElementById('ed-peso').value.toString().replace(',','.')) || p.peso;
-        p.refInterna = document.getElementById('ed-ref-interna').value;
-        p.comprimento = document.getElementById('ed-comprimento').value;
-        p.altura = document.getElementById('ed-altura').value;
-        p.largura = document.getElementById('ed-largura').value;
-        p.diametro = document.getElementById('ed-diametro').value;
-        p.deseng = document.getElementById('ed-deseng').value;
-        p.desengTempo = document.getElementById('ed-deseng-tempo').value;
-        p.decap = document.getElementById('ed-decap').value;
-        p.decapTempo = document.getElementById('ed-decap-tempo').value;
-        p.electro = document.getElementById('ed-electro').value;
-        p.electroTempo = document.getElementById('ed-electro-tempo').value;
-        p.passiv = document.getElementById('ed-passiv').value;
-        p.passivTempo = document.getElementById('ed-passiv-tempo').value;
+        // Update piece snapshot for this service instead of global piece
+        const snapshot = s.pieceSnapshot || {};
+        snapshot.clienteId = parseInt(document.getElementById('ed-cliente').value);
+        snapshot.dm2 = document.getElementById('ed-dm2').value;
+        snapshot.potencia = parseFloat(document.getElementById('ed-potencia').value) || snapshot.potencia;
+        snapshot.peso = parseFloat(document.getElementById('ed-peso').value.toString().replace(',','.')) || snapshot.peso;
+        snapshot.refInterna = document.getElementById('ed-ref-interna').value;
+        snapshot.comprimento = document.getElementById('ed-comprimento').value;
+        snapshot.altura = document.getElementById('ed-altura').value;
+        snapshot.largura = document.getElementById('ed-largura').value;
+        snapshot.diametro = document.getElementById('ed-diametro').value;
+        snapshot.deseng = document.getElementById('ed-deseng').value;
+        snapshot.desengTempo = document.getElementById('ed-deseng-tempo').value;
+        snapshot.decap = document.getElementById('ed-decap').value;
+        snapshot.decapTempo = document.getElementById('ed-decap-tempo').value;
+        snapshot.electro = document.getElementById('ed-electro').value;
+        snapshot.electroTempo = document.getElementById('ed-electro-tempo').value;
+        snapshot.passiv = document.getElementById('ed-passiv').value;
+        snapshot.passivTempo = document.getElementById('ed-passiv-tempo').value;
+        s.pieceSnapshot = snapshot;
     }
     saveDB(db); showToast('Guardado!'); if (s && s.status === 'Concluído') switchPage('historico'); else switchPage('trabalhos-curso');
 };
