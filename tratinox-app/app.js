@@ -532,24 +532,25 @@ window.abrirEdicao = function(servicoId) {
         edQC.style.cursor = canQC ? 'pointer' : 'not-allowed';
         edQC.style.opacity = canQC ? '1' : '0.6';
     }
+    const snap = s.pieceSnapshot || {};
     if(p) {
-        document.getElementById('ed-dm2').value = p.dm2 || '';
-        document.getElementById('ed-potencia').value = p.potencia || '';
-        document.getElementById('ed-peso').value = p.peso || '';
-        document.getElementById('ed-ref-interna').value = p.refInterna || '';
-        document.getElementById('ed-comprimento').value = p.comprimento || '';
-        document.getElementById('ed-altura').value = p.altura || '';
-        document.getElementById('ed-largura').value = p.largura || '';
-        document.getElementById('ed-diametro').value = p.diametro || '';
-        document.getElementById('ed-deseng').value = p.deseng || '';
-        document.getElementById('ed-deseng-tempo').value = p.desengTempo || '';
-        document.getElementById('ed-decap').value = p.decap || '';
-        document.getElementById('ed-decap-tempo').value = p.decapTempo || '';
-        document.getElementById('ed-electro').value = p.electro || '';
-        document.getElementById('ed-electro-tempo').value = p.electroTempo || '';
-        document.getElementById('ed-passiv').value = p.passiv || '';
-document.getElementById('ed-ciclo').value = snap.ciclo || (p ? p.ciclo : '');
-        document.getElementById('ed-passiv-tempo').value = p.passivTempo || '';
+        document.getElementById('ed-dm2').value = snap.dm2 || p.dm2 || '';
+        document.getElementById('ed-potencia').value = snap.potencia || p.potencia || '';
+        document.getElementById('ed-peso').value = snap.peso || p.peso || '';
+        document.getElementById('ed-ref-interna').value = snap.refInterna || p.refInterna || '';
+        document.getElementById('ed-comprimento').value = snap.comprimento || p.comprimento || '';
+        document.getElementById('ed-altura').value = snap.altura || p.altura || '';
+        document.getElementById('ed-largura').value = snap.largura || p.largura || '';
+        document.getElementById('ed-diametro').value = snap.diametro || p.diametro || '';
+        document.getElementById('ed-deseng').value = snap.deseng || p.deseng || '';
+        document.getElementById('ed-deseng-tempo').value = snap.desengTempo || p.desengTempo || '';
+        document.getElementById('ed-decap').value = snap.decap || p.decap || '';
+        document.getElementById('ed-decap-tempo').value = snap.decapTempo || p.decapTempo || '';
+        document.getElementById('ed-electro').value = snap.electro || p.electro || '';
+        document.getElementById('ed-electro-tempo').value = snap.electroTempo || p.electroTempo || '';
+        document.getElementById('ed-passiv').value = snap.passiv || p.passiv || '';
+        document.getElementById('ed-ciclo').value = snap.ciclo || p.ciclo || '';
+        document.getElementById('ed-passiv-tempo').value = snap.passivTempo || p.passivTempo || '';
     }
     switchPage('edicao'); enforceRoles();
 };
