@@ -168,7 +168,7 @@
 
                 <div id="page-edicao" class="page">
                     <div class="card form-card">
-                        <h3><button class="btn small-btn secondary-btn" onclick="switchPage('trabalhos-curso')" style="margin-right: 10px; cursor: pointer;"><i class="fa-solid fa-arrow-left"></i></button> Editar Serviço & Peça Mestre</h3>
+                        <h3><button class="btn small-btn secondary-btn" onclick="voltarDetalhe()" style="margin-right: 10px; cursor: pointer;"><i class="fa-solid fa-arrow-left"></i></button> Editar Serviço & Peça Mestre</h3>
                         
                         <input type="hidden" id="ed-servico-id">
                         <input type="hidden" id="ed-peca-id">
@@ -258,10 +258,13 @@
                 <!-- PÁGINA: DETALHE SERVIÇO (CONSULTA) -->
                 <div id="page-detalhe-servico" class="page">
                     <div class="card form-card">
-                        <h3>
-                            <button class="btn small-btn secondary-btn" onclick="voltarDetalhe()" style="margin-right:10px;"><i class="fa-solid fa-arrow-left"></i></button>
-                            <i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Ficha do Serviço (Consulta)
-                        </h3>
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                            <h3 style="margin:0;">
+                                <button class="btn small-btn secondary-btn" onclick="voltarDetalhe()" style="margin-right:10px;"><i class="fa-solid fa-arrow-left"></i></button>
+                                <i class="fa-solid fa-magnifying-glass" style="color:var(--primary);"></i> Ficha do Serviço (Consulta)
+                            </h3>
+                            <button class="btn small-btn editor-only" id="btn-editar-do-detalhe" style="background:#475569;color:white;" onclick="abrirEdicaoAtual()"><i class="fa-solid fa-pen-to-square"></i> Editar Serviço & Peça</button>
+                        </div>
 
                         <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:var(--primary);">Informação do Serviço</h5>
                         <div class="grid-3">

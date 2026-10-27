@@ -116,13 +116,13 @@ window.resetSystem = function() {
     }
 };
 
-const showToast = (msg) => {
+function showToast(msg) {
     const c = document.getElementById('toast-container');
     if(!c) return;
     const t = document.createElement('div');
     t.className = 'toast'; t.textContent = msg;
     c.appendChild(t); setTimeout(() => t.remove(), 3000);
-};
+}
 
 const switchPage = (id) => {
     currentPage = id;
@@ -381,8 +381,15 @@ window.verServico = function(servicoId) {
         fotoBadge.style.color = '#10b981';
         fotoBadge.style.fontWeight = '700';
     }
+    window.currentViewingServicoId = s.id;
     prevPage = currentPage !== 'detalhe-servico' ? currentPage : 'trabalhos-curso';
     switchPage('detalhe-servico');
+};
+
+window.abrirEdicaoAtual = function() {
+    if (window.currentViewingServicoId) {
+        abrirEdicao(window.currentViewingServicoId);
+    }
 };
 
 window.voltarDetalhe = function() {
@@ -444,37 +451,53 @@ window.abrirEdicao = function(servicoId) {
     if(!s) return;
     if (s.status === 'Concluído' && currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') return showToast('Admin apenas.');
     const p = (db.pecas || []).find(x => x.id === s.partId);
-    document.getElementById('ed-servico-id').value = servicoId;
-    document.getElementById('ed-peca-id').value = s.partId;
+    prevPage = currentPage !== 'edicao' ? currentPage : 'trabalhos-curso';
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val != null ? val : '';
+    };
+
+    setVal('ed-servico-id', servicoId);
+    setVal('ed-peca-id', s.partId);
     const sCliente = document.getElementById('ed-cliente');
     if(sCliente) { sCliente.innerHTML = (db.clientes || []).map(c => `<option value="${c.id}">${c.name}</option>`).join(''); sCliente.value = s.clienteId; }
-    document.getElementById('ed-guia').value = s.guia || '';
-    document.getElementById('ed-data-entrada').value = s.dataEntrada || '';
-    document.getElementById('ed-data-prevista').value = s.dataPrevista || '';
-    document.getElementById('ed-quantidade').value = s.qty || '';
+    setVal('ed-guia', s.guia);
+    setVal('ed-data-entrada', s.dataEntrada);
+    setVal('ed-data-prevista', s.dataPrevista);
+    setVal('ed-quantidade', s.qty);
     const realGroup = document.getElementById('ed-data-real-group');
-    if (s.status === 'Concluído') { realGroup.style.display = 'block'; document.getElementById('ed-data-real').value = s.dataReal || ''; }
-    else realGroup.style.display = 'none';
-    document.getElementById('ed-observacoes').value = s.observacoes || '';
+    if (realGroup) {
+        if (s.status === 'Concluído') { realGroup.style.display = 'block'; setVal('ed-data-real', s.dataReal); }
+        else realGroup.style.display = 'none';
+    }
+    setVal('ed-observacoes', s.observacoes);
     if(p) {
-        document.getElementById('ed-dm2').value = p.dm2 || '';
-        document.getElementById('ed-potencia').value = p.potencia || '';
-        document.getElementById('ed-ciclo').value = p.ciclo || '';
-        document.getElementById('ed-peso').value = p.peso || '';
-        document.getElementById('ed-ref-interna').value = p.refInterna || '';
-        document.getElementById('ed-tipo-inox').value = p.tipoInox || '';
-        document.getElementById('ed-comp').value = p.comprimento || '';
-        document.getElementById('ed-alt').value = p.altura || '';
-        document.getElementById('ed-larg').value = p.largura || '';
-        document.getElementById('ed-diam').value = p.diametro || '';
-        document.getElementById('ed-deseng').value = p.deseng || '';
-        document.getElementById('ed-deseng-t').value = p.desengTempo || '';
-        document.getElementById('ed-decap').value = p.decap || '';
-        document.getElementById('ed-decap-t').value = p.decapTempo || '';
-        document.getElementById('ed-electro').value = p.electro || '';
-        document.getElementById('ed-electro-t').value = p.electroTempo || '';
-        document.getElementById('ed-passiv').value = p.passiv || '';
-        document.getElementById('ed-passiv-t').value = p.passivTempo || '';
+        setVal('ed-dm2', p.dm2);
+        setVal('ed-potencia', p.potencia);
+        setVal('ed-ciclo', p.ciclo);
+        setVal('ed-peso', p.peso);
+        setVal('ed-ref-interna', p.refInterna);
+        setVal('ed-tipo-inox', p.tipoInox);
+        setVal('ed-comprimento', p.comprimento);
+        setVal('ed-comp', p.comprimento);
+        setVal('ed-altura', p.altura);
+        setVal('ed-alt', p.altura);
+        setVal('ed-largura', p.largura);
+        setVal('ed-larg', p.largura);
+        setVal('ed-diametro', p.diametro);
+        setVal('ed-diam', p.diametro);
+        setVal('ed-deseng', p.deseng);
+        setVal('ed-deseng-tempo', p.desengTempo);
+        setVal('ed-deseng-t', p.desengTempo);
+        setVal('ed-decap', p.decap);
+        setVal('ed-decap-tempo', p.decapTempo);
+        setVal('ed-decap-t', p.decapTempo);
+        setVal('ed-electro', p.electro);
+        setVal('ed-electro-tempo', p.electroTempo);
+        setVal('ed-electro-t', p.electroTempo);
+        setVal('ed-passiv', p.passiv);
+        setVal('ed-passiv-tempo', p.passivTempo);
+        setVal('ed-passiv-t', p.passivTempo);
     }
     switchPage('edicao'); enforceRoles();
 };
@@ -503,7 +526,8 @@ window.guardarEdicao = function() {
         p.peso = parseFloat(document.getElementById('ed-peso').value.toString().replace(',','.')) || p.peso;
         p.refInterna = document.getElementById('ed-ref-interna').value;
         p.tipoInox = document.getElementById('ed-tipo-inox').value;
-        p.comprimento = document.getElementById('ed-comp').value;
+        const compInp = document.getElementById('ed-comprimento') || document.getElementById('ed-comp');
+        if (compInp) p.comprimento = compInp.value;
         p.altura = document.getElementById('ed-alt').value;
         p.largura = document.getElementById('ed-larg').value;
         p.diametro = document.getElementById('ed-diam').value;
