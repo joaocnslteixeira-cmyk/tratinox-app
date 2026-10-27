@@ -54,6 +54,7 @@ let localDB = localBackup || INITIAL_DATA;
 
 let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
 let currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
+let prevPage = 'trabalhos-curso'; // página anterior para o botão voltar
 
 if (dbRef) {
     const connectedRef = firebase.database().ref(".info/connected");
@@ -75,13 +76,13 @@ if (dbRef) {
             localDB.users = INITIAL_DATA.users;
             localDB = fixPecasLegadas(localDB);
             saveLocalBackup(localDB);
-            if (currentUser) refreshData(currentPage);
+            if (currentUser && currentPage !== 'detalhe-servico') refreshData(currentPage);
         }
     }, (error) => {
         showToast("AVISO: sem ligação à nuvem.");
         const backup = loadLocalBackup();
         if(backup) { localDB = backup; localDB.users = INITIAL_DATA.users; localDB = fixPecasLegadas(localDB); }
-        if(currentUser) refreshData(currentPage);
+        if(currentUser && currentPage !== 'detalhe-servico') refreshData(currentPage);
     });
 }
 
@@ -380,7 +381,12 @@ window.verServico = function(servicoId) {
         fotoBadge.style.color = '#10b981';
         fotoBadge.style.fontWeight = '700';
     }
+    prevPage = currentPage !== 'detalhe-servico' ? currentPage : 'trabalhos-curso';
     switchPage('detalhe-servico');
+};
+
+window.voltarDetalhe = function() {
+    switchPage(prevPage || 'trabalhos-curso');
 };
 
 window.eliminarCliente = function(id) {
@@ -579,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const p = found || {};
             document.getElementById('ns-parametros').innerHTML = `
                 <div class="input-group"><label>Ref Interna</label><input type="text" id="ns-p-ref-interna" value="${p.refInterna||''}"></div>
+                <div class="input-group"><label>Tipo de Inox</label><input type="text" id="ns-p-tipo-inox" value="${p.tipoInox||''}" placeholder="Ex: 304, 316"></div>
                 <div class="input-group"><label>Área (dm²)</label><input type="text" id="ns-p-dm2" value="${p.dm2||''}"></div>
                 <div class="input-group"><label>Peso (kg)</label><input type="text" id="ns-p-peso" value="${p.peso||0}"></div>
                 <div class="input-group"><label>Potência (A)</label><input type="text" id="ns-p-potencia" value="${p.potencia||0}"></div>
@@ -620,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 peso: parseFloat(document.getElementById('ns-p-peso').value.toString().replace(',','.')) || 0,
                 potencia: parseFloat(document.getElementById('ns-p-potencia').value) || 0,
                 ciclo: parseInt(document.getElementById('ns-p-ciclo').value) || 0,
-                tipoInox: '',
+                tipoInox: document.getElementById('ns-p-tipo-inox') ? document.getElementById('ns-p-tipo-inox').value : '',
                 comprimento: document.getElementById('ns-p-comp').value,
                 altura: document.getElementById('ns-p-alt').value,
                 largura: document.getElementById('ns-p-larg').value,
@@ -639,6 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(p) {
                 p.refInterna = document.getElementById('ns-p-ref-interna').value;
                 p.dm2 = document.getElementById('ns-p-dm2').value;
+                if(document.getElementById('ns-p-tipo-inox')) p.tipoInox = document.getElementById('ns-p-tipo-inox').value;
                 p.peso = parseFloat(document.getElementById('ns-p-peso').value.toString().replace(',','.')) || 0;
                 p.potencia = parseFloat(document.getElementById('ns-p-potencia').value) || 0;
                 p.ciclo = parseInt(document.getElementById('ns-p-ciclo').value) || 0;
@@ -694,8 +702,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = (db.servicos || []).find(x => x.id === servicoId);
         if(s) {
             s.foto = checkbox.checked;
-            saveDB(db);
-            // Atualizar ícone ao lado do checkbox
+            // Guardar apenas localmente + Firebase (sem redesenhar a tabela)
+            saveLocalBackup(db);
+            if (dbRef) dbRef.set(db).catch(() => {});
+            // Atualizar ícone visualmente sem refresh
             const span = checkbox.nextElementSibling;
             if(span) span.innerHTML = checkbox.checked
                 ? '<i class="fa-solid fa-circle-check" style="color:#10b981;font-size:1.2rem;"></i>'
