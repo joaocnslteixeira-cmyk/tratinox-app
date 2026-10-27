@@ -508,39 +508,58 @@ window.guardarEdicao = function() {
     const servicoId = parseInt(document.getElementById('ed-servico-id').value);
     const pecaId = parseInt(document.getElementById('ed-peca-id').value);
     const s = (db.servicos || []).find(x => x.id === servicoId);
+    
+    const getVal = (id1, id2, defaultVal = '') => {
+        const el1 = document.getElementById(id1);
+        if (el1 && el1.value !== undefined) return el1.value;
+        if (id2) {
+            const el2 = document.getElementById(id2);
+            if (el2 && el2.value !== undefined) return el2.value;
+        }
+        return defaultVal;
+    };
+
     if(s) {
-        s.observacoes = document.getElementById('ed-observacoes').value;
-        s.dataEntrada = document.getElementById('ed-data-entrada').value;
-        s.dataPrevista = document.getElementById('ed-data-prevista').value;
-        s.guia = document.getElementById('ed-guia').value || s.guia;
-        s.qty = parseInt(document.getElementById('ed-quantidade').value) || s.qty;
-        s.clienteId = parseInt(document.getElementById('ed-cliente').value);
-        if (s.status === 'Concluído') s.dataReal = document.getElementById('ed-data-real').value;
+        s.observacoes = getVal('ed-observacoes', null, s.observacoes || '');
+        s.dataEntrada = getVal('ed-data-entrada', null, s.dataEntrada);
+        s.dataPrevista = getVal('ed-data-prevista', null, s.dataPrevista);
+        s.guia = getVal('ed-guia', null, s.guia) || s.guia;
+        const qVal = parseInt(getVal('ed-quantidade'));
+        s.qty = isNaN(qVal) ? s.qty : qVal;
+        const cVal = parseInt(getVal('ed-cliente'));
+        if(!isNaN(cVal)) s.clienteId = cVal;
+        if (s.status === 'Concluído') s.dataReal = getVal('ed-data-real', null, s.dataReal);
     }
+
     const p = (db.pecas || []).find(x => x.id === pecaId);
     if(p) {
-        p.clienteId = parseInt(document.getElementById('ed-cliente').value);
-        p.dm2 = document.getElementById('ed-dm2').value;
-        p.potencia = parseFloat(document.getElementById('ed-potencia').value) || p.potencia;
-        p.ciclo = parseInt(document.getElementById('ed-ciclo').value) || 0;
-        p.peso = parseFloat(document.getElementById('ed-peso').value.toString().replace(',','.')) || p.peso;
-        p.refInterna = document.getElementById('ed-ref-interna').value;
-        p.tipoInox = document.getElementById('ed-tipo-inox').value;
-        const compInp = document.getElementById('ed-comprimento') || document.getElementById('ed-comp');
-        if (compInp) p.comprimento = compInp.value;
-        p.altura = document.getElementById('ed-alt').value;
-        p.largura = document.getElementById('ed-larg').value;
-        p.diametro = document.getElementById('ed-diam').value;
-        p.deseng = document.getElementById('ed-deseng').value;
-        p.desengTempo = document.getElementById('ed-deseng-t').value;
-        p.decap = document.getElementById('ed-decap').value;
-        p.decapTempo = document.getElementById('ed-decap-t').value;
-        p.electro = document.getElementById('ed-electro').value;
-        p.electroTempo = document.getElementById('ed-electro-t').value;
-        p.passiv = document.getElementById('ed-passiv').value;
-        p.passivTempo = document.getElementById('ed-passiv-t').value;
+        const cVal = parseInt(getVal('ed-cliente'));
+        if(!isNaN(cVal)) p.clienteId = cVal;
+        p.dm2 = getVal('ed-dm2', null, p.dm2 || '');
+        p.potencia = parseFloat(getVal('ed-potencia', null, p.potencia || 0)) || p.potencia;
+        p.ciclo = parseInt(getVal('ed-ciclo', null, p.ciclo || 0)) || 0;
+        const pesoRaw = getVal('ed-peso', null, p.peso || 0);
+        p.peso = parseFloat(pesoRaw.toString().replace(',','.')) || p.peso;
+        p.refInterna = getVal('ed-ref-interna', null, p.refInterna || '');
+        p.tipoInox = getVal('ed-tipo-inox', null, p.tipoInox || '');
+        p.comprimento = getVal('ed-comprimento', 'ed-comp', p.comprimento || '');
+        p.altura = getVal('ed-altura', 'ed-alt', p.altura || '');
+        p.largura = getVal('ed-largura', 'ed-larg', p.largura || '');
+        p.diametro = getVal('ed-diametro', 'ed-diam', p.diametro || '');
+        p.deseng = getVal('ed-deseng', null, p.deseng || '');
+        p.desengTempo = getVal('ed-deseng-tempo', 'ed-deseng-t', p.desengTempo || '');
+        p.decap = getVal('ed-decap', null, p.decap || '');
+        p.decapTempo = getVal('ed-decap-tempo', 'ed-decap-t', p.decapTempo || '');
+        p.electro = getVal('ed-electro', null, p.electro || '');
+        p.electroTempo = getVal('ed-electro-tempo', 'ed-electro-t', p.electroTempo || '');
+        p.passiv = getVal('ed-passiv', null, p.passiv || '');
+        p.passivTempo = getVal('ed-passiv-tempo', 'ed-passiv-t', p.passivTempo || '');
     }
-    saveDB(db); showToast('Guardado!'); if (s && s.status === 'Concluído') switchPage('historico'); else switchPage('trabalhos-curso');
+
+    saveDB(db);
+    showToast('Guardado com sucesso! ✅');
+    if (s && s.status === 'Concluído') switchPage('historico');
+    else switchPage('trabalhos-curso');
 };
 
 document.addEventListener('DOMContentLoaded', () => {
