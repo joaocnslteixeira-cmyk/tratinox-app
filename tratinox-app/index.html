@@ -47,7 +47,6 @@
                 <li data-target="novo-servico"><i class="fa-solid fa-plus-circle"></i> Novo Serviço</li>
                 <li data-target="trabalhos-curso"><i class="fa-solid fa-list-check"></i> Trabalhos em Curso</li>
                 <li data-target="historico"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</li>
-                <li data-target="ponto"><i class="fa-solid fa-clock"></i> Controlo de Ponto</li>
                 <li data-target="pecas"><i class="fa-solid fa-cubes"></i> Peças</li>
                 <li data-target="clientes"><i class="fa-solid fa-users"></i> Clientes</li>
             </ul>
@@ -106,7 +105,6 @@
                                         <th style="min-width:140px;">Decapagem</th>
                                         <th style="min-width:140px;">Eletropolimento</th>
                                         <th style="min-width:140px;">Passivação</th>
-                                        <th title="Controlo de Qualidade">QC</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-monitor"></tbody>
@@ -147,8 +145,8 @@
                                 <div class="input-group"><label>Quantidade</label><input type="number" id="ns-quantidade" required></div>
                                 <div class="input-group"><label>Estado</label>
                                     <select id="ns-estado" required>
+                                        <option value="Em Curso" selected>Em Produção</option>
                                         <option value="Pendente">Aguardar Produção</option>
-                                        <option value="Em Curso">Em Produção</option>
                                     </select>
                                 </div>
                                 <div class="input-group"><label>Data de Entrada</label><input type="date" id="ns-data-entrada" required></div>
@@ -198,6 +196,7 @@
                             <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="ed-ciclo"></div>
                             <div class="input-group"><label>Peso (kg)</label><input type="text" id="ed-peso" placeholder="Ex: 0,5 ou 3,2"></div>
                             <div class="input-group"><label>Ref Interna</label><input type="text" id="ed-ref-interna" placeholder="Ref. interna"></div>
+                            <div class="input-group"><label>Tipo de Inox</label><input type="text" id="ed-tipo-inox" placeholder="Ex: 304, 316L..."></div>
                             <div class="input-group"><label>Comprimento (mm)</label><input type="text" id="ed-comprimento"></div>
                             <div class="input-group"><label>Altura (mm)</label><input type="text" id="ed-altura"></div>
                             <div class="input-group"><label>Largura (mm)</label><input type="text" id="ed-largura"></div>
@@ -208,11 +207,6 @@
                             <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-passiv"><input style="flex:1;" type="text" id="ed-passiv-tempo"></div></div>
                         </div>
                         
-                        <div class="input-group mt-1" style="display:flex;align-items:center;gap:14px;padding:0.9rem 1rem;background:rgba(16,185,129,0.07);border-radius:8px;border:1px solid rgba(16,185,129,0.25);">
-                            <input type="checkbox" id="ed-qualidade-ok" style="width:20px;height:20px;accent-color:#10b981;cursor:pointer;">
-                            <label style="margin:0;font-weight:600;color:#059669;cursor:pointer;" for="ed-qualidade-ok"><i class="fa-solid fa-shield-check"></i> Controlo de Qualidade OK</label>
-                            <small style="color:#888;margin-left:auto;font-size:0.8rem;">(apenas João e Carina)</small>
-                        </div>
                         <div class="form-actions mt-2">
                             <button class="btn primary-btn editor-only" onclick="guardarEdicao()">Guardar Alterações Reais</button>
                         </div>
@@ -228,7 +222,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th title="Controlo de Qualidade OK">QC ✅</th><th>Ações</th>
+                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th style="text-align:center;"><i class="fa-solid fa-camera"></i> Foto</th><th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-trabalhos"></tbody>
@@ -243,7 +237,7 @@
                             <h3>Histórico de Trabalhos e Entregas</h3>
                             <div class="filter-group">
                                 <label style="font-size: 0.8rem; color: #888;">Filtrar por Cliente:</label>
-                                <select id="history-filter-cliente" onchange="filtrarHistorico()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
+                                <select id="history-filter-cliente" onchange="refreshData('historico')" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
                                     <option value="all">Todos os Clientes</option>
                                 </select>
                             </div>
@@ -258,7 +252,6 @@
                                 <tbody id="table-historico"></tbody>
                             </table>
                         </div>
-                        <div id="hist-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:0.8rem 1rem;border-top:1px solid var(--border-color);"></div>
                     </div>
                 </div>
 
@@ -280,6 +273,14 @@
                             <div class="input-group"><label>Estado</label><input type="text" id="dv-estado" disabled></div>
                         </div>
                         <div class="input-group mt-1"><label>Observações do Serviço</label><textarea id="dv-observacoes" rows="2" disabled></textarea></div>
+                        <div class="foto-check-group mt-1">
+                            <label class="foto-check-label">
+                                <input type="checkbox" id="dv-foto" onchange="guardarFoto(this)">
+                                <span class="foto-check-icon"><i class="fa-solid fa-camera"></i></span>
+                                <span class="foto-check-text">Foto tirada pela responsável de armazém</span>
+                                <span class="foto-check-badge" id="dv-foto-badge"></span>
+                            </label>
+                        </div>
 
                         <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:#555;">Identificação da Peça</h5>
                         <div class="grid-3">
@@ -289,6 +290,7 @@
                             <div class="input-group"><label>Peso (kg)</label><input type="text" id="dv-peso" disabled></div>
                             <div class="input-group"><label>Peças/Ciclo</label><input type="text" id="dv-ciclo" disabled></div>
                             <div class="input-group"><label>Potência (A)</label><input type="text" id="dv-potencia" disabled></div>
+                            <div class="input-group"><label>Tipo de Inox</label><input type="text" id="dv-tipo-inox" disabled></div>
                         </div>
 
                         <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:#555;">Dimensões (mm)</h5>
@@ -306,10 +308,6 @@
                             <div class="input-group"><label>Decapagem</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-decap" disabled><input style="flex:1;" type="text" id="dv-decap-tempo" disabled></div></div>
                             <div class="input-group"><label>Eletropolimento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-electro" disabled><input style="flex:1;" type="text" id="dv-electro-tempo" disabled></div></div>
                             <div class="input-group"><label>Passivação</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="dv-passiv" disabled><input style="flex:1;" type="text" id="dv-passiv-tempo" disabled></div></div>
-                        </div>
-                        <div class="input-group mt-1" style="display:flex;align-items:center;gap:14px;padding:0.9rem 1rem;background:rgba(16,185,129,0.07);border-radius:8px;border:1px solid rgba(16,185,129,0.2);">
-                            <input type="checkbox" id="dv-qualidade-ok" disabled style="width:20px;height:20px;accent-color:#10b981;">
-                            <label style="margin:0;font-weight:600;color:#059669;"><i class="fa-solid fa-shield-check"></i> Controlo de Qualidade OK</label>
                         </div>
                     </div>
                 </div>
@@ -338,6 +336,7 @@
                                 <div class="input-group"><label>Peso (kg)</label><input type="text" id="np-peso" placeholder="Ex: 0,5 ou 3,2"></div>
                                 <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="np-ciclo"></div>
                                 <div class="input-group"><label>Potência (A)</label><input type="text" id="np-potencia"></div>
+                                <div class="input-group"><label>Tipo de Inox</label><input type="text" id="np-tipo-inox" placeholder="Ex: 304, 316L..."></div>
                             </div>
 
                             <h5 style="margin-top: 1rem; margin-bottom: 0.5rem; color: #555;">Dimensões (mm)</h5>
@@ -376,29 +375,6 @@
                                                                 <thead><tr><th>Ref</th><th>Ref Interna</th><th>Designação</th><th>Cliente</th><th>Peso</th><th>Ciclo</th><th class="joao-only">Ações</th></tr></thead>
                                 <tbody id="table-pecas"></tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PÁGINA: CONTROLO DE PONTO -->
-                <div id="page-ponto" class="page">
-                    <div class="card">
-                        <div class="card-header-flex">
-                            <h3><i class="fa-solid fa-clock"></i> Controlo de Ponto (QR Code)</h3>
-                            <div class="filter-group">
-                                <label style="font-size: 0.8rem; color: #888;">Filtro de Data:</label>
-                                <input type="date" id="ponto-filter-data" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit;">
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="data-table">
-                                <thead><tr><th>Colaborador</th><th><span class="badge" style="background:#d1fae5;color:#047857;">Entrada</span></th><th><span class="badge" style="background:#fef3c7;color:#b45309;">Saída Almoço</span></th><th><span class="badge" style="background:#dbeafe;color:#1d4ed8;">Entr. Almoço</span></th><th><span class="badge" style="background:#fee2e2;color:#b91c1c;">Saída</span></th></tr></thead>
-                                <tbody id="table-ponto"></tbody>
-                            </table>
-                        </div>
-                        <div style="margin-top: 1.5rem;">
-                            <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">O QR Code fixo na parede deve apontar para o seguinte endereço:</p>
-                            <a href="../ponto-colaborador/index.html" target="_blank" class="btn secondary-btn" style="display:inline-block; text-decoration:none;"><i class="fa-solid fa-qrcode"></i> Abrir App dos Colaboradores (Teste)</a>
                         </div>
                     </div>
                 </div>

@@ -27,9 +27,7 @@ const INITIAL_DATA = {
         { username: 'encarnacaoloureiro', password: 'encarnacaoloureiro123', role: 'VIEWER', name: 'Encarnação Loureiro' },
         { username: 'cristinaencarnacao', password: 'cristinaencarnacao123', role: 'VIEWER', name: 'Cristina Encarnação' },
         { username: 'monicaencarnacao', password: 'monicaencarnacao123', role: 'VIEWER', name: 'Mónica Encarnação' },
-        { username: 'carlanunes', password: 'carlanunes123', role: 'VIEWER', name: 'Carla Nunes' },
-        { username: 'joaocarneiro', password: 'joaocarneiro123', role: 'EDITOR', name: 'João Carneiro' },
-        { username: 'sofiafernandes', password: 'sofiafernandes123', role: 'EDITOR', name: 'Sofia Fernandes' }
+        { username: 'carlanunes', password: 'carlanunes123', role: 'VIEWER', name: 'Carla Nunes' }
     ],
     clientes: [],
     pecas: [],
@@ -56,8 +54,6 @@ let localDB = localBackup || INITIAL_DATA;
 
 let currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || null;
 let currentPage = sessionStorage.getItem('currentPage') || 'dashboard';
-let historicoPage = 0;
-const HIST_PAGE_SIZE = 30;
 
 if (dbRef) {
     const connectedRef = firebase.database().ref(".info/connected");
@@ -179,21 +175,19 @@ function refreshData(id) {
                 const decapStr = p ? (p.decap ? `${p.decap} <small>(${p.decapTempo || '-'})</small>` : '-') : '-';
                 const electroStr = p ? (p.electro ? `${p.electro} <small>(${p.electroTempo || '-'})</small>` : '-') : '-';
                 const passivStr = p ? (p.passiv ? `${p.passiv} <small>(${p.passivTempo || '-'})</small>` : '-') : '-';
-                const qcIcon = s.qualidadeOk
-                    ? '<i class="fa-solid fa-shield-check" style="color:#10b981;font-size:1rem;" title="Controlo de Qualidade OK"></i>'
-                    : '<i class="fa-regular fa-circle" style="color:#d1d5db;font-size:1rem;" title="Pendente"></i>';
-                tMonitor.innerHTML += `<tr><td><strong>${p ? p.name : '-'}</strong></td><td>${c ? c.name : '-'}</td><td style="color:#555;">${decapStr}</td><td style="color:var(--primary); font-weight:600; background: rgba(59,130,246,0.05);">${electroStr}</td><td style="color:#555;">${passivStr}</td><td style="text-align:center;">${qcIcon}</td></tr>`;
+                tMonitor.innerHTML += `<tr><td><strong>${p ? p.name : '-'}</strong></td><td>${c ? c.name : '-'}</td><td style="color:#555;">${decapStr}</td><td style="color:var(--primary); font-weight:600; background: rgba(59,130,246,0.05);">${electroStr}</td><td style="color:#555;">${passivStr}</td></tr>`;
             });
-            if(!emCurso.length) tMonitor.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos para visualização no monitor de produção.</td></tr>';
+            if(!emCurso.length) tMonitor.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos para visualização no monitor de produção.</td></tr>';
         }
     }
     if(id === 'trabalhos-curso') {
         const tbody = document.getElementById('table-trabalhos');
         tbody.innerHTML = '';
         const today = new Date().toISOString().split('T')[0];
-        const emCurso = (db.servicos || []).filter(s => s.status === 'Em Curso');
+        // Mostrar Em Curso E Pendente
+        const ativos = (db.servicos || []).filter(s => s.status === 'Em Curso' || s.status === 'Pendente');
         const grouped = {};
-        emCurso.forEach(s => {
+        ativos.forEach(s => {
             if(!grouped[s.clienteId]) grouped[s.clienteId] = [];
             grouped[s.clienteId].push(s);
         });
@@ -207,7 +201,7 @@ function refreshData(id) {
             const services = grouped[cid];
             const headerRow = document.createElement('tr');
             headerRow.className = 'client-group-header';
-            headerRow.innerHTML = `<td colspan="8"><i class="fa-solid fa-chevron-right"></i> ${client ? client.name : 'Cliente Desconhecido'} <span class="badge">${services.length}</span></td>`;
+            headerRow.innerHTML = `<td colspan="9"><i class="fa-solid fa-chevron-right"></i> ${client ? client.name : 'Cliente Desconhecido'} <span class="badge">${services.length}</span></td>`;
             headerRow.onclick = () => {
                 const isExpanded = headerRow.classList.toggle('expanded');
                 const workRows = tbody.querySelectorAll(`.work-of-client-${cid}`);
@@ -219,19 +213,31 @@ function refreshData(id) {
                 const p = (db.pecas || []).find(x => x.id === s.partId);
                 const isLate = s.dataPrevista < today;
                 const obsIcon = s.observacoes ? `<i class="fa-solid fa-comment-dots" title="Tem observações" style="color:#f59e0b;margin-left:4px;"></i>` : '';
-                // Checkbox QC - editável apenas por João e Carina
-                const canQC = currentUser.username === 'joaoteixeira' || currentUser.username === 'carina';
-                const qcCell = canQC
-                    ? `<td onclick="event.stopPropagation()" style="text-align:center;"><input type="checkbox" title="Controlo de Qualidade OK" ${s.qualidadeOk ? 'checked' : ''} onchange="toggleQualidade(${s.id})" style="width:18px;height:18px;cursor:pointer;accent-color:#10b981;"></td>`
-                    : `<td style="text-align:center;" title="Controlo de Qualidade">${s.qualidadeOk ? '<i class="fa-solid fa-shield-check" style="color:#10b981;"></i>' : '<i class="fa-regular fa-circle" style="color:#d1d5db;"></i>'}</td>`;
+                const isPendente = s.status === 'Pendente';
+                const isEmCurso = s.status === 'Em Curso';
+                // Cor de fundo da linha
+                const rowBg = isPendente
+                    ? 'background: rgba(245,158,11,0.08); border-left: 3px solid #f59e0b;'
+                    : 'background: rgba(16,185,129,0.08); border-left: 3px solid #10b981;';
+                // Badge de estado
+                const estadoBadge = isPendente
+                    ? `<span class="badge" style="background:rgba(245,158,11,0.2);color:#b45309;font-weight:700;"><i class="fa-solid fa-hourglass-half"></i> Aguardar Produção</span>`
+                    : `<span class="badge" style="background:rgba(16,185,129,0.2);color:#065f46;font-weight:700;"><i class="fa-solid fa-play"></i> Em Curso</span>`;
+                // Checkbox foto na lista
+                const fotoChecked = s.foto ? 'checked' : '';
+                const fotoCell = `<td style="text-align:center;" onclick="event.stopPropagation()"><label class="foto-mini-check" title="${s.foto ? 'Foto tirada' : 'Sem foto'}">
+                    <input type="checkbox" ${fotoChecked} onchange="toggleFotoLista(${s.id}, this)">
+                    <span>${s.foto ? '<i class="fa-solid fa-circle-check" style="color:#10b981;font-size:1.2rem;"></i>' : '<i class="fa-regular fa-circle" style="color:#ccc;font-size:1.2rem;"></i>'}</span>
+                </label></td>`;
                 const tr = document.createElement('tr');
                 tr.className = `clickable-row work-of-client-${cid} work-row-hidden`;
+                tr.setAttribute('style', rowBg);
                 tr.onclick = () => verServico(s.id);
-                tr.innerHTML = `<td></td><td>${s.guia}${obsIcon}</td><td>${p ? p.name : '-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataPrevista}</td><td><span class="badge ${isLate ? 'danger' : 'success'}">${isLate ? 'NÃO CUMPRIU' : 'NO PRAZO'}</span></td>${qcCell}<td style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()"><button class="btn small-btn editor-only" style="background:#475569;color:white;" onclick="abrirEdicao(${s.id})"><i class="fa-solid fa-pen-to-square"></i></button><button class="btn small-btn primary-btn editor-only" onclick="concluirServico(${s.id})"><i class="fa-solid fa-check"></i></button></td>`;
+                tr.innerHTML = `<td></td><td>${s.guia}${obsIcon}</td><td>${p ? p.name : '-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataPrevista}</td><td>${estadoBadge}</td>${fotoCell}<td style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()"><button class="btn small-btn editor-only" style="background:#475569;color:white;" onclick="abrirEdicao(${s.id})"><i class="fa-solid fa-pen-to-square"></i></button>${isPendente ? `<button class="btn small-btn editor-only" style="background:#f59e0b;color:white;" title="Mover para Em Curso" onclick="iniciarServico(${s.id})"><i class="fa-solid fa-play"></i> Iniciar</button>` : `<button class="btn small-btn primary-btn editor-only" onclick="concluirServico(${s.id})"><i class="fa-solid fa-check"></i></button>`}</td>`;
                 tbody.appendChild(tr);
             });
         });
-        if(!emCurso.length) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos em curso.</td></tr>';
+        if(!ativos.length) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos em curso.</td></tr>';
         enforceRoles();
     }
     if(id === 'historico') {
@@ -252,40 +258,17 @@ function refreshData(id) {
         }
         tbody.innerHTML = '';
         let servicosMostrados = (db.servicos || []).filter(s => s.status === 'Concluído');
-        // Ordenar do mais recente para o mais antigo
-        servicosMostrados.sort((a, b) => (b.dataReal || '').localeCompare(a.dataReal || ''));
         if(filterVal !== 'all') {
             const cid = parseInt(filterVal);
             servicosMostrados = servicosMostrados.filter(s => s.clienteId === cid);
         }
-        // --- PAGINAÇÃO ---
-        const total = servicosMostrados.length;
-        const totalPages = Math.max(1, Math.ceil(total / HIST_PAGE_SIZE));
-        if(historicoPage >= totalPages) historicoPage = totalPages - 1;
-        const start = historicoPage * HIST_PAGE_SIZE;
-        const end = Math.min(start + HIST_PAGE_SIZE, total);
-        const paginados = servicosMostrados.slice(start, end);
-
-        paginados.forEach(s => {
+        servicosMostrados.forEach(s => {
             const p = (db.pecas || []).find(x => x.id === s.partId);
             const c = (db.clientes || []).find(x => x.id === s.clienteId);
             const isLate = s.dataPrevista < s.dataReal;
             tbody.innerHTML += `<tr style="cursor:pointer;" onclick="verServico(${s.id})"><td>${c?c.name:'-'}</td><td>${s.guia}</td><td>${p?p.name:'-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataReal}</td><td><span class="badge ${isLate?'danger':'success'}">${isLate?'NÃO CUMPRIU':'NO PRAZO'}</span></td><td onclick="event.stopPropagation()" style="display:flex;gap:6px;"><button class="btn small-btn admin-only" onclick="abrirEdicao(${s.id})" title="Editar Registo" style="background-color:#475569;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-pen-to-square"></i></button><button class="btn small-btn admin-only" onclick="reabrirServico(${s.id})" title="Retomar Produção" style="background-color:#f59e0b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-rotate-left"></i></button><button class="btn small-btn danger-btn editor-only" onclick="eliminarHistorico(${s.id})" style="background-color:#e74c3c;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td></tr>`;
         });
-        if(!total) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color: #888;">Nenhum registo encontrado para este filtro.</td></tr>';
-
-        // Controlos de paginação
-        const paginDiv = document.getElementById('hist-pagination');
-        if(paginDiv) {
-            if(total <= HIST_PAGE_SIZE) {
-                paginDiv.innerHTML = `<span style="font-size:0.85rem;color:#888;">${total} registo(s)</span>`;
-            } else {
-                paginDiv.innerHTML = `
-                    <button class="btn small-btn secondary-btn" onclick="navHistorico(-1)" ${historicoPage === 0 ? 'disabled style="opacity:0.4;"' : ''}>← Anterior</button>
-                    <span style="font-size:0.85rem;color:#888;">Página <strong>${historicoPage+1}</strong> de <strong>${totalPages}</strong> &mdash; ${start+1}–${end} de ${total} registos</span>
-                    <button class="btn small-btn secondary-btn" onclick="navHistorico(1)" ${historicoPage >= totalPages-1 ? 'disabled style="opacity:0.4;"' : ''}>Próxima →</button>`;
-            }
-        }
+        if(!servicosMostrados.length) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color: #888;">Nenhum registo encontrado para este filtro.</td></tr>';
         enforceRoles();
     }
     if(id === 'pecas') {
@@ -310,56 +293,6 @@ function refreshData(id) {
         if(!(db.clientes || []).length) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Nenhum cliente registado ainda.</td></tr>';
         enforceRoles();
     }
-    if(id === 'ponto') {
-        refreshPonto();
-    }
-}
-
-window.refreshPonto = function() {
-    const tbody = document.getElementById('table-ponto');
-    const filterInput = document.getElementById('ponto-filter-data');
-    if (!filterInput.value) {
-        filterInput.value = new Date().toISOString().split('T')[0];
-    }
-    const filterDate = filterInput.value;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> A carregar dados...</td></tr>';
-    
-    if (dbRef && dbRef.parent) {
-        const pontoRef = dbRef.parent.child('ponto_registos');
-        pontoRef.orderByChild('date').equalTo(filterDate).once('value', (snap) => {
-            const records = [];
-            snap.forEach(child => { records.push(child.val()); });
-            
-            // Agrupar por funcionário
-            const empGroups = {};
-            records.forEach(r => {
-                if(!empGroups[r.empName]) empGroups[r.empName] = { entrada: '-', saida_almoco: '-', entrada_almoco: '-', saida: '-' };
-                
-                // Grava apenas o primeiro de entrada/regresso e último de saída, se houver vários (evita bugs de click duplo)
-                if (r.type === 'entrada' && empGroups[r.empName].entrada === '-') empGroups[r.empName].entrada = r.time.substring(0, 5);
-                if (r.type === 'saida_almoco' && empGroups[r.empName].saida_almoco === '-') empGroups[r.empName].saida_almoco = r.time.substring(0, 5);
-                if (r.type === 'entrada_almoco' && empGroups[r.empName].entrada_almoco === '-') empGroups[r.empName].entrada_almoco = r.time.substring(0, 5);
-                if (r.type === 'saida') empGroups[r.empName].saida = r.time.substring(0, 5); // Sobrescreve com a última saída
-            });
-            
-            tbody.innerHTML = '';
-            const names = Object.keys(empGroups).sort();
-            names.forEach(name => {
-                const p = empGroups[name];
-                tbody.innerHTML += `<tr>
-                    <td><strong>${name}</strong></td>
-                    <td style="color:#047857;font-weight:600;">${p.entrada}</td>
-                    <td style="color:#b45309;">${p.saida_almoco}</td>
-                    <td style="color:#1d4ed8;">${p.entrada_almoco}</td>
-                    <td style="color:#b91c1c;font-weight:600;">${p.saida}</td>
-                </tr>`;
-            });
-            
-            if(names.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Sem registos para o dia selecionado.</td></tr>';
-            }
-        });
-    }
 }
 
 window.concluirServico = function(id) {
@@ -370,6 +303,18 @@ window.concluirServico = function(id) {
         s.status = 'Concluído'; s.dataReal = new Date().toISOString().split('T')[0];
         saveDB(db); showToast('Serviço concluído!');
         if(currentPage === 'trabalhos-curso') refreshData('trabalhos-curso');
+    }
+};
+
+window.iniciarServico = function(id) {
+    if(currentUser.role !== 'EDITOR') return showToast('Sem permissão.');
+    const db = getDB();
+    const s = (db.servicos || []).find(x => x.id === id);
+    if(s) {
+        s.status = 'Em Curso';
+        saveDB(db);
+        showToast('▶️ Serviço iniciado! A peça está agora em produção.');
+        refreshData('trabalhos-curso');
     }
 };
 
@@ -388,34 +333,6 @@ window.eliminarHistorico = function(id) {
     if(db.servicos) { db.servicos = db.servicos.filter(x => x.id !== id); saveDB(db); showToast('Apagado!'); if(currentPage === 'historico') refreshData('historico'); }
 };
 
-// Filtrar histórico resetando para página 0
-window.filtrarHistorico = function() {
-    historicoPage = 0;
-    refreshData('historico');
-};
-
-// Navegar páginas do histórico
-window.navHistorico = function(dir) {
-    historicoPage += dir;
-    if(historicoPage < 0) historicoPage = 0;
-    refreshData('historico');
-};
-
-// Toggle Controlo de Qualidade (só João e Carina)
-window.toggleQualidade = function(id) {
-    if(currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') {
-        return showToast('Apenas João e Carina podem alterar o controlo de qualidade.');
-    }
-    const db = getDB();
-    const s = (db.servicos || []).find(x => x.id === id);
-    if(s) {
-        s.qualidadeOk = !s.qualidadeOk;
-        saveDB(db);
-        refreshData(currentPage);
-        showToast(s.qualidadeOk ? '✅ Qualidade marcada como OK!' : 'Qualidade desmarcada.');
-    }
-};
-
 window.verServico = function(servicoId) {
     const db = getDB();
     const s = (db.servicos || []).find(x => x.id === servicoId);
@@ -429,31 +346,42 @@ window.verServico = function(servicoId) {
     document.getElementById('dv-entrega').value = s.dataReal || '-';
     document.getElementById('dv-estado').value = s.status || '';
     document.getElementById('dv-observacoes').value = s.observacoes || '';
-    const dvQC = document.getElementById('dv-qualidade-ok');
-    if(dvQC) dvQC.checked = s.qualidadeOk || false;
-    const snap = s.pieceSnapshot || {};
-    document.getElementById('dv-ref').value = snap.ref || (p ? p.ref : '');
-    document.getElementById('dv-ref-interna').value = snap.refInterna || (p ? p.refInterna : '');
-    document.getElementById('dv-nome').value = snap.name || (p ? p.name : '');
-    document.getElementById('dv-peso').value = snap.peso ? snap.peso + ' kg' : (p && p.peso ? p.peso + ' kg' : '');
-    document.getElementById('dv-ciclo').value = snap.ciclo || (p ? p.ciclo : '');
-    document.getElementById('dv-potencia').value = snap.potencia ? snap.potencia + ' A' : (p && p.potencia ? p.potencia + ' A' : '');
-    document.getElementById('dv-comprimento').value = snap.comprimento || (p ? p.comprimento : '');
-    document.getElementById('dv-altura').value = snap.altura || (p ? p.altura : '');
-    document.getElementById('dv-largura').value = snap.largura || (p ? p.largura : '');
-    document.getElementById('dv-diametro').value = snap.diametro || (p ? p.diametro : '');
-    document.getElementById('dv-dm2').value = p ? p.dm2 : '';
-    document.getElementById('dv-deseng').value = p ? p.deseng : '';
-    document.getElementById('dv-deseng-tempo').value = p ? p.desengTempo : '';
-    document.getElementById('dv-decap').value = p ? p.decap : '';
-    document.getElementById('dv-decap-tempo').value = p ? p.decapTempo : '';
-    document.getElementById('dv-electro').value = p ? p.electro : '';
-    document.getElementById('dv-electro-tempo').value = p ? p.electroTempo : '';
-    document.getElementById('dv-passiv').value = p ? p.passiv : '';
-    document.getElementById('dv-passiv-tempo').value = p ? p.passivTempo : '';
+    if(p) {
+        document.getElementById('dv-ref').value = p.ref || '';
+        document.getElementById('dv-ref-interna').value = p.refInterna || '';
+        document.getElementById('dv-nome').value = p.name || '';
+        document.getElementById('dv-peso').value = p.peso ? p.peso + ' kg' : '';
+        document.getElementById('dv-ciclo').value = p.ciclo || '';
+        document.getElementById('dv-potencia').value = p.potencia ? p.potencia + ' A' : '';
+        document.getElementById('dv-tipo-inox').value = p.tipoInox || '';
+        document.getElementById('dv-comprimento').value = p.comprimento || '';
+        document.getElementById('dv-altura').value = p.altura || '';
+        document.getElementById('dv-largura').value = p.largura || '';
+        document.getElementById('dv-diametro').value = p.diametro || '';
+        document.getElementById('dv-dm2').value = p.dm2 || '';
+        document.getElementById('dv-deseng').value = p.deseng || '';
+        document.getElementById('dv-deseng-tempo').value = p.desengTempo || '';
+        document.getElementById('dv-decap').value = p.decap || '';
+        document.getElementById('dv-decap-tempo').value = p.decapTempo || '';
+        document.getElementById('dv-electro').value = p.electro || '';
+        document.getElementById('dv-electro-tempo').value = p.electroTempo || '';
+        document.getElementById('dv-passiv').value = p.passiv || '';
+        document.getElementById('dv-passiv-tempo').value = p.passivTempo || '';
+    }
+    // Carregar estado da foto
+    const fotoCheck = document.getElementById('dv-foto');
+    const fotoBadge = document.getElementById('dv-foto-badge');
+    if (fotoCheck) {
+        fotoCheck.checked = !!s.foto;
+        fotoCheck.dataset.servicoId = s.id;
+    }
+    if (fotoBadge) {
+        fotoBadge.textContent = s.foto ? '✅ Foto Registada' : '';
+        fotoBadge.style.color = '#10b981';
+        fotoBadge.style.fontWeight = '700';
+    }
     switchPage('detalhe-servico');
 };
-
 
 window.eliminarCliente = function(id) {
     if(currentUser.role !== 'EDITOR') return showToast('Sem permissão.');
@@ -510,7 +438,6 @@ window.abrirEdicao = function(servicoId) {
     if(!s) return;
     if (s.status === 'Concluído' && currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') return showToast('Admin apenas.');
     const p = (db.pecas || []).find(x => x.id === s.partId);
-    const snap = s.pieceSnapshot || {};
     document.getElementById('ed-servico-id').value = servicoId;
     document.getElementById('ed-peca-id').value = s.partId;
     const sCliente = document.getElementById('ed-cliente');
@@ -523,34 +450,25 @@ window.abrirEdicao = function(servicoId) {
     if (s.status === 'Concluído') { realGroup.style.display = 'block'; document.getElementById('ed-data-real').value = s.dataReal || ''; }
     else realGroup.style.display = 'none';
     document.getElementById('ed-observacoes').value = s.observacoes || '';
-    // QC - visível a todos, editável apenas por João e Carina
-    const edQC = document.getElementById('ed-qualidade-ok');
-    if(edQC) {
-        edQC.checked = s.qualidadeOk || false;
-        const canQC = currentUser.username === 'joaoteixeira' || currentUser.username === 'carina';
-        edQC.disabled = !canQC;
-        edQC.style.cursor = canQC ? 'pointer' : 'not-allowed';
-        edQC.style.opacity = canQC ? '1' : '0.6';
-    }
-    const snap = s.pieceSnapshot || {};
     if(p) {
-        document.getElementById('ed-dm2').value = snap.dm2 || p.dm2 || '';
-        document.getElementById('ed-potencia').value = snap.potencia || p.potencia || '';
-        document.getElementById('ed-peso').value = snap.peso || p.peso || '';
-        document.getElementById('ed-ref-interna').value = snap.refInterna || p.refInterna || '';
-        document.getElementById('ed-comprimento').value = snap.comprimento || p.comprimento || '';
-        document.getElementById('ed-altura').value = snap.altura || p.altura || '';
-        document.getElementById('ed-largura').value = snap.largura || p.largura || '';
-        document.getElementById('ed-diametro').value = snap.diametro || p.diametro || '';
-        document.getElementById('ed-deseng').value = snap.deseng || p.deseng || '';
-        document.getElementById('ed-deseng-tempo').value = snap.desengTempo || p.desengTempo || '';
-        document.getElementById('ed-decap').value = snap.decap || p.decap || '';
-        document.getElementById('ed-decap-tempo').value = snap.decapTempo || p.decapTempo || '';
-        document.getElementById('ed-electro').value = snap.electro || p.electro || '';
-        document.getElementById('ed-electro-tempo').value = snap.electroTempo || p.electroTempo || '';
-        document.getElementById('ed-passiv').value = snap.passiv || p.passiv || '';
-        document.getElementById('ed-ciclo').value = snap.ciclo || p.ciclo || '';
-        document.getElementById('ed-passiv-tempo').value = snap.passivTempo || p.passivTempo || '';
+        document.getElementById('ed-dm2').value = p.dm2 || '';
+        document.getElementById('ed-potencia').value = p.potencia || '';
+        document.getElementById('ed-ciclo').value = p.ciclo || '';
+        document.getElementById('ed-peso').value = p.peso || '';
+        document.getElementById('ed-ref-interna').value = p.refInterna || '';
+        document.getElementById('ed-tipo-inox').value = p.tipoInox || '';
+        document.getElementById('ed-comp').value = p.comprimento || '';
+        document.getElementById('ed-alt').value = p.altura || '';
+        document.getElementById('ed-larg').value = p.largura || '';
+        document.getElementById('ed-diam').value = p.diametro || '';
+        document.getElementById('ed-deseng').value = p.deseng || '';
+        document.getElementById('ed-deseng-t').value = p.desengTempo || '';
+        document.getElementById('ed-decap').value = p.decap || '';
+        document.getElementById('ed-decap-t').value = p.decapTempo || '';
+        document.getElementById('ed-electro').value = p.electro || '';
+        document.getElementById('ed-electro-t').value = p.electroTempo || '';
+        document.getElementById('ed-passiv').value = p.passiv || '';
+        document.getElementById('ed-passiv-t').value = p.passivTempo || '';
     }
     switchPage('edicao'); enforceRoles();
 };
@@ -569,36 +487,28 @@ window.guardarEdicao = function() {
         s.qty = parseInt(document.getElementById('ed-quantidade').value) || s.qty;
         s.clienteId = parseInt(document.getElementById('ed-cliente').value);
         if (s.status === 'Concluído') s.dataReal = document.getElementById('ed-data-real').value;
-        // Guardar QC se o utilizador tiver permissão
-        const canQC = currentUser.username === 'joaoteixeira' || currentUser.username === 'carina';
-        if(canQC) {
-            const edQC = document.getElementById('ed-qualidade-ok');
-            if(edQC) s.qualidadeOk = edQC.checked;
-        }
     }
     const p = (db.pecas || []).find(x => x.id === pecaId);
     if(p) {
-        // Update piece snapshot for this service instead of global piece
-        const snapshot = s.pieceSnapshot || {};
-        snapshot.ciclo = parseInt(document.getElementById('ed-ciclo').value) || snapshot.ciclo;
-        snapshot.clienteId = parseInt(document.getElementById('ed-cliente').value);
-        snapshot.dm2 = document.getElementById('ed-dm2').value;
-        snapshot.potencia = parseFloat(document.getElementById('ed-potencia').value) || snapshot.potencia;
-        snapshot.peso = parseFloat(document.getElementById('ed-peso').value.toString().replace(',','.')) || snapshot.peso;
-        snapshot.refInterna = document.getElementById('ed-ref-interna').value;
-        snapshot.comprimento = document.getElementById('ed-comprimento').value;
-        snapshot.altura = document.getElementById('ed-altura').value;
-        snapshot.largura = document.getElementById('ed-largura').value;
-        snapshot.diametro = document.getElementById('ed-diametro').value;
-        snapshot.deseng = document.getElementById('ed-deseng').value;
-        snapshot.desengTempo = document.getElementById('ed-deseng-tempo').value;
-        snapshot.decap = document.getElementById('ed-decap').value;
-        snapshot.decapTempo = document.getElementById('ed-decap-tempo').value;
-        snapshot.electro = document.getElementById('ed-electro').value;
-        snapshot.electroTempo = document.getElementById('ed-electro-tempo').value;
-        snapshot.passiv = document.getElementById('ed-passiv').value;
-        snapshot.passivTempo = document.getElementById('ed-passiv-tempo').value;
-        s.pieceSnapshot = snapshot;
+        p.clienteId = parseInt(document.getElementById('ed-cliente').value);
+        p.dm2 = document.getElementById('ed-dm2').value;
+        p.potencia = parseFloat(document.getElementById('ed-potencia').value) || p.potencia;
+        p.ciclo = parseInt(document.getElementById('ed-ciclo').value) || 0;
+        p.peso = parseFloat(document.getElementById('ed-peso').value.toString().replace(',','.')) || p.peso;
+        p.refInterna = document.getElementById('ed-ref-interna').value;
+        p.tipoInox = document.getElementById('ed-tipo-inox').value;
+        p.comprimento = document.getElementById('ed-comp').value;
+        p.altura = document.getElementById('ed-alt').value;
+        p.largura = document.getElementById('ed-larg').value;
+        p.diametro = document.getElementById('ed-diam').value;
+        p.deseng = document.getElementById('ed-deseng').value;
+        p.desengTempo = document.getElementById('ed-deseng-t').value;
+        p.decap = document.getElementById('ed-decap').value;
+        p.decapTempo = document.getElementById('ed-decap-t').value;
+        p.electro = document.getElementById('ed-electro').value;
+        p.electroTempo = document.getElementById('ed-electro-t').value;
+        p.passiv = document.getElementById('ed-passiv').value;
+        p.passivTempo = document.getElementById('ed-passiv-t').value;
     }
     saveDB(db); showToast('Guardado!'); if (s && s.status === 'Concluído') switchPage('historico'); else switchPage('trabalhos-curso');
 };
@@ -647,13 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         dlPecas.appendChild(opt);
                     });
                 }
-            } else {
-                // Campo 1 apagado: limpar campo 2 e esconder formulário
-                nsInpPeca.disabled = true;
-                nsInpPeca.value = '';
-                document.getElementById('ns-part-id').value = '';
-                document.getElementById('new-service-form').classList.add('hidden');
-            }
+            } else nsInpPeca.disabled = true;
         };
     }
     if(nsInpPeca) {
@@ -716,6 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 peso: parseFloat(document.getElementById('ns-p-peso').value.toString().replace(',','.')) || 0,
                 potencia: parseFloat(document.getElementById('ns-p-potencia').value) || 0,
                 ciclo: parseInt(document.getElementById('ns-p-ciclo').value) || 0,
+                tipoInox: '',
                 comprimento: document.getElementById('ns-p-comp').value,
                 altura: document.getElementById('ns-p-alt').value,
                 largura: document.getElementById('ns-p-larg').value,
@@ -751,51 +656,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 p.passivTempo = document.getElementById('ns-p-passiv-t').value;
             }
         }
-        // Save a snapshot of the piece at creation time to prevent later edits affecting this service
-        const piece = (db.pecas || []).find(x => x.id === pid) || {};
-        const pieceSnapshot = {
-            ciclo: piece.ciclo,
-            peso: piece.peso,
-            potencia: piece.potencia,
-            refInterna: piece.refInterna,
-            dm2: piece.dm2,
-            comprimento: piece.comprimento,
-            altura: piece.altura,
-            largura: piece.largura,
-            diametro: piece.diametro,
-            deseng: piece.deseng,
-            desengTempo: piece.desengTempo,
-            decap: piece.decap,
-            decapTempo: piece.decapTempo,
-            electro: piece.electro,
-            electroTempo: piece.electroTempo,
-            passiv: piece.passiv,
-            passivTempo: piece.passivTempo,
-            name: piece.name,
-            ref: piece.ref
-        };
+        if(!db.servicos) db.servicos = [];
         db.servicos.push({
             id: Date.now() + 2, partId: pid, clienteId: cid,
             guia: document.getElementById('ns-guia').value, qty: parseInt(document.getElementById('ns-quantidade').value),
             dataEntrada: document.getElementById('ns-data-entrada').value, dataPrevista: document.getElementById('ns-data-prevista').value,
             status: document.getElementById('ns-estado').value, dataReal: null,
-            observacoes: document.getElementById('ns-observacoes').value || '',
-            pieceSnapshot: pieceSnapshot
+            observacoes: document.getElementById('ns-observacoes').value || ''
         });
-        saveDB(db); showToast('Guardado!'); e.target.reset();
+        saveDB(db); showToast('Guardado!'); e.target.reset(); 
         document.getElementById('new-service-form').classList.add('hidden');
-        // Limpar campos 1 e 2 para ficha nova
-        nsInpCliente.value = '';
-        nsInpPeca.value = '';
-        nsInpPeca.disabled = true;
-        document.getElementById('ns-cliente-id').value = '';
-        document.getElementById('ns-part-id').value = '';
-        document.getElementById('ns-parametros').innerHTML = '';
-        refreshData('dashboard');
+        nsInpPeca.disabled = true; refreshData('dashboard');
     };
 
     document.getElementById('btn-cancel-service').onclick = () => { 
         document.getElementById('new-service-form').classList.add('hidden'); nsInpPeca.disabled = true; 
+    };
+
+    // Função para guardar foto na ficha de detalhe
+    window.guardarFoto = function(checkbox) {
+        const sid = parseInt(checkbox.dataset.servicoId);
+        if(!sid) return;
+        const db = getDB();
+        const s = (db.servicos || []).find(x => x.id === sid);
+        if(s) {
+            s.foto = checkbox.checked;
+            saveDB(db);
+            const badge = document.getElementById('dv-foto-badge');
+            if(badge) { badge.textContent = checkbox.checked ? '✅ Foto Registada' : ''; }
+            showToast(checkbox.checked ? '📸 Foto marcada!' : 'Foto desmarcada.');
+        }
+    };
+
+    // Função para toggle de foto direto na lista de trabalhos
+    window.toggleFotoLista = function(servicoId, checkbox) {
+        const db = getDB();
+        const s = (db.servicos || []).find(x => x.id === servicoId);
+        if(s) {
+            s.foto = checkbox.checked;
+            saveDB(db);
+            // Atualizar ícone ao lado do checkbox
+            const span = checkbox.nextElementSibling;
+            if(span) span.innerHTML = checkbox.checked
+                ? '<i class="fa-solid fa-circle-check" style="color:#10b981;font-size:1.2rem;"></i>'
+                : '<i class="fa-regular fa-circle" style="color:#ccc;font-size:1.2rem;"></i>';
+            showToast(checkbox.checked ? '📸 Foto marcada!' : 'Foto desmarcada.');
+        }
     };
 
     const btnNovaPeca = document.getElementById('btn-nova-peca');
@@ -817,6 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 peso: parseFloat(document.getElementById('np-peso').value.toString().replace(',','.')) || 0,
                 ciclo: parseInt(document.getElementById('np-ciclo').value) || 0,
                 potencia: parseFloat(document.getElementById('np-potencia').value) || 0,
+                tipoInox: document.getElementById('np-tipo-inox').value,
                 dm2: document.getElementById('np-dm2').value, deseng: document.getElementById('np-deseng').value,
                 desengTempo: document.getElementById('np-deseng-tempo').value, decap: document.getElementById('np-decap').value,
                 decapTempo: document.getElementById('np-decap-tempo').value, electro: document.getElementById('np-electro').value,
