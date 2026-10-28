@@ -247,7 +247,7 @@ function refreshData(id) {
         const filterVal = filterSelect ? filterSelect.value : 'all';
         if(filterSelect) {
             const currentVal = filterSelect.value;
-            const histClients = (db.clientes || []).filter(c => (db.servicos || []).some(s => s.status === 'Concluído' && s.clienteId === c.id)).sort((a,b) => a.name.localeCompare(b.name));
+            const histClients = (db.clientes || []).filter(c => (db.servicos || []).some(s => s.status === 'Concluído' && s.clienteId === c.id)).sort((a,b) => String(a.name || '').localeCompare(String(b.name || '')));
             filterSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
             histClients.forEach(c => {
                 const opt = document.createElement('option');
@@ -263,12 +263,16 @@ function refreshData(id) {
             const cid = parseInt(filterVal);
             servicosMostrados = servicosMostrados.filter(s => s.clienteId === cid);
         }
+        const pecasMap = new Map((db.pecas || []).map(x => [x.id, x]));
+        const clientesMap = new Map((db.clientes || []).map(x => [x.id, x]));
+        const histRows = [];
         servicosMostrados.forEach(s => {
-            const p = (db.pecas || []).find(x => x.id === s.partId);
-            const c = (db.clientes || []).find(x => x.id === s.clienteId);
+            const p = pecasMap.get(s.partId);
+            const c = clientesMap.get(s.clienteId);
             const isLate = s.dataPrevista < s.dataReal;
-            tbody.innerHTML += `<tr style="cursor:pointer;" onclick="verServico(${s.id})"><td>${c?c.name:'-'}</td><td>${s.guia}</td><td>${p?p.name:'-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataReal}</td><td><span class="badge ${isLate?'danger':'success'}">${isLate?'NÃO CUMPRIU':'NO PRAZO'}</span></td><td onclick="event.stopPropagation()" style="display:flex;gap:6px;"><button class="btn small-btn admin-only" onclick="abrirEdicao(${s.id})" title="Editar Registo" style="background-color:#475569;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-pen-to-square"></i></button><button class="btn small-btn admin-only" onclick="reabrirServico(${s.id})" title="Retomar Produção" style="background-color:#f59e0b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-rotate-left"></i></button><button class="btn small-btn danger-btn editor-only" onclick="eliminarHistorico(${s.id})" style="background-color:#e74c3c;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            histRows.push(`<tr style="cursor:pointer;" onclick="verServico(${s.id})"><td>${c?c.name:'-'}</td><td>${s.guia}</td><td>${p?p.name:'-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataReal}</td><td><span class="badge ${isLate?'danger':'success'}">${isLate?'NÃO CUMPRIU':'NO PRAZO'}</span></td><td onclick="event.stopPropagation()" style="display:flex;gap:6px;"><button class="btn small-btn admin-only" onclick="abrirEdicao(${s.id})" title="Editar Registo" style="background-color:#475569;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-pen-to-square"></i></button><button class="btn small-btn admin-only" onclick="reabrirServico(${s.id})" title="Retomar Produção" style="background-color:#f59e0b;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-rotate-left"></i></button><button class="btn small-btn danger-btn editor-only" onclick="eliminarHistorico(${s.id})" style="background-color:#e74c3c;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td></tr>`);
         });
+        tbody.innerHTML = histRows.join('');
         if(!servicosMostrados.length) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color: #888;">Nenhum registo encontrado para este filtro.</td></tr>';
         enforceRoles();
     }
@@ -451,7 +455,8 @@ window.abrirEdicao = function(servicoId) {
     if(!s) return;
     if (s.status === 'Concluído' && currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina') return showToast('Admin apenas.');
     const p = (db.pecas || []).find(x => x.id === s.partId);
-    prevPage = currentPage !== 'edicao' ? currentPage : 'trabalhos-curso';
+    if (currentPage === 'detalhe-servico') { if (!prevPage || prevPage === 'detalhe-servico' || prevPage === 'edicao') prevPage = 'trabalhos-curso'; }
+    else prevPage = currentPage !== 'edicao' ? currentPage : 'trabalhos-curso';
     const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.value = val != null ? val : '';
