@@ -202,7 +202,7 @@ function refreshData(id) {
             const services = grouped[cid];
             const headerRow = document.createElement('tr');
             headerRow.className = 'client-group-header';
-            headerRow.innerHTML = `<td colspan="9"><i class="fa-solid fa-chevron-right"></i> ${client ? client.name : 'Cliente Desconhecido'} <span class="badge">${services.length}</span></td>`;
+            headerRow.innerHTML = `<td colspan="10"><i class="fa-solid fa-chevron-right"></i> ${client ? client.name : 'Cliente Desconhecido'} <span class="badge">${services.length}</span></td>`;
             headerRow.onclick = () => {
                 const isExpanded = headerRow.classList.toggle('expanded');
                 const workRows = tbody.querySelectorAll(`.work-of-client-${cid}`);
@@ -234,11 +234,11 @@ function refreshData(id) {
                 tr.className = `clickable-row work-of-client-${cid} work-row-hidden`;
                 tr.setAttribute('style', rowBg);
                 tr.onclick = () => verServico(s.id);
-                tr.innerHTML = `<td></td><td>${s.guia}${obsIcon}</td><td>${p ? p.name : '-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataPrevista}</td><td>${estadoBadge}</td>${fotoCell}<td style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()"><button class="btn small-btn editor-only" style="background:#475569;color:white;" onclick="abrirEdicao(${s.id})"><i class="fa-solid fa-pen-to-square"></i></button>${isPendente ? `<button class="btn small-btn editor-only" style="background:#f59e0b;color:white;" title="Mover para Em Curso" onclick="iniciarServico(${s.id})"><i class="fa-solid fa-play"></i> Iniciar</button>` : `<button class="btn small-btn primary-btn editor-only" onclick="concluirServico(${s.id})"><i class="fa-solid fa-check"></i></button>`}</td>`;
+                tr.innerHTML = `<td></td><td>${s.guia}${obsIcon}</td><td style="font-size:0.85rem;color:#64748b;">${p ? (p.ref || '-') : '-'}</td><td>${p ? p.name : '-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataPrevista}</td><td>${estadoBadge}</td>${fotoCell}<td style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()"><button class="btn small-btn editor-only" style="background:#475569;color:white;" onclick="abrirEdicao(${s.id})"><i class="fa-solid fa-pen-to-square"></i></button>${isPendente ? `<button class="btn small-btn editor-only" style="background:#f59e0b;color:white;" title="Mover para Em Curso" onclick="iniciarServico(${s.id})"><i class="fa-solid fa-play"></i> Iniciar</button>` : `<button class="btn small-btn primary-btn editor-only" onclick="concluirServico(${s.id})"><i class="fa-solid fa-check"></i></button>`}</td>`;
                 tbody.appendChild(tr);
             });
         });
-        if(!ativos.length) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos em curso.</td></tr>';
+        if(!ativos.length) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos em curso.</td></tr>';
         enforceRoles();
     }
     if(id === 'historico') {
@@ -607,7 +607,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(found) {
                     (db.pecas || []).filter(p => p.clienteId === found.id).forEach(p => {
                         const opt = document.createElement('option');
-                        opt.value = (p.ref && p.name && p.ref !== p.name) ? `${p.ref} - ${p.name}` : (p.name || p.ref);
+                        if (p.ref && p.name && p.ref !== p.name) {
+                            opt.value = `${p.ref} - ${p.name}`;
+                        } else {
+                            opt.value = p.name || p.ref || '';
+                        }
+                        if (p.refInterna) {
+                            opt.label = `Ref Int: ${p.refInterna}`;
+                        }
                         dlPecas.appendChild(opt);
                     });
                 }
@@ -622,17 +629,71 @@ document.addEventListener('DOMContentLoaded', () => {
             if(cid) {
                 found = (db.pecas || []).find(p => {
                     if (p.clienteId !== cid) return false;
-                    const r = (p.ref || '').toLowerCase().replace(/^- ?/, '');
-                    const n = (p.name || '').toLowerCase().replace(/^- ?/, '');
-                    return r === val || n === val || `${r} - ${n}` === val;
+                    const r = (p.ref || '').toLowerCase().replace(/^- ?/, '').trim();
+                    const ri = (p.refInterna || '').toLowerCase().replace(/^- ?/, '').trim();
+                    const n = (p.name || '').toLowerCase().replace(/^- ?/, '').trim();
+                    return (r && r === val) || (ri && ri === val) || (n && n === val) || (r && n && `${r} - ${n}` === val);
                 });
             }
             document.getElementById('new-service-form').classList.remove('hidden');
             document.getElementById('ns-part-id').value = found ? found.id : '';
             document.getElementById('ns-data-entrada').value = new Date().toISOString().split('T')[0];
+            
+            // Mostrar secção de identificação da peça
+            const identitySection = document.getElementById('ns-peca-identity');
+            if(identitySection) identitySection.classList.remove('hidden');
+            
             const p = found || {};
+            
+            // Preencher campos de identificação
+            const refField = document.getElementById('ns-peca-ref');
+            const refInternaField = document.getElementById('ns-peca-ref-interna');
+            const nomeField = document.getElementById('ns-peca-nome');
+            if(refField) refField.value = p.ref || '';
+            if(refInternaField) refInternaField.value = p.refInterna || '';
+            if(nomeField) {
+                if(found) {
+                    nomeField.value = p.name || '';
+                } else if(!nomeField.value.trim()) {
+                    // Se estiver a escrever uma nova peça, sugere o texto pesquisado
+                    nomeField.value = nsInpPeca.value.trim().replace(/^- ?/, '');
+                }
+            }
+            
+            // Se peça existente, desabilitar ref/nome (só editáveis na ficha de edição)
+            if(found) {
+                if(refField) refField.disabled = true;
+                if(nomeField) nomeField.disabled = true;
+                if(refInternaField) refInternaField.disabled = true;
+            } else {
+                if(refField) refField.disabled = false;
+                if(nomeField) nomeField.disabled = false;
+                if(refInternaField) refInternaField.disabled = false;
+            }
+            
+            // Mostrar observações do último serviço desta peça (se existir) e preencher no novo serviço
+            const obsAnteriorGroup = document.getElementById('ns-obs-anterior-group');
+            const obsAnteriorField = document.getElementById('ns-obs-anterior');
+            const obsNovoField = document.getElementById('ns-observacoes');
+            if(found && obsAnteriorGroup && obsAnteriorField) {
+                const servicosDaPeca = (db.servicos || []).filter(s => s.partId === found.id).sort((a,b) => b.id - a.id);
+                const ultimoServico = servicosDaPeca.length > 0 ? servicosDaPeca[0] : null;
+                if(ultimoServico && ultimoServico.observacoes) {
+                    obsAnteriorField.value = ultimoServico.observacoes;
+                    obsAnteriorGroup.classList.remove('hidden');
+                    if(obsNovoField && !obsNovoField.value.trim()) {
+                        obsNovoField.value = ultimoServico.observacoes;
+                    }
+                } else {
+                    obsAnteriorField.value = '';
+                    obsAnteriorGroup.classList.add('hidden');
+                }
+            } else if(obsAnteriorGroup) {
+                obsAnteriorGroup.classList.add('hidden');
+            }
+            
             document.getElementById('ns-parametros').innerHTML = `
-                <div class="input-group"><label>Ref Interna</label><input type="text" id="ns-p-ref-interna" value="${p.refInterna||''}"></div>
+                <div class="input-group"><label>Ref Interna</label><input type="text" id="ns-p-ref-interna" value="${p.refInterna||''}" maxlength="100"></div>
                 <div class="input-group"><label>Tipo de Inox</label><input type="text" id="ns-p-tipo-inox" value="${p.tipoInox||''}" placeholder="Ex: 304, 316"></div>
                 <div class="input-group"><label>Área (dm²)</label><input type="text" id="ns-p-dm2" value="${p.dm2||''}"></div>
                 <div class="input-group"><label>Peso (kg)</label><input type="text" id="ns-p-peso" value="${p.peso||0}"></div>
@@ -665,12 +726,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!pid) {
             const d = nsInpPeca.value.trim().replace(/^- ?/, ''); if(!d) return;
             pid = Date.now() + 1; if(!db.pecas) db.pecas = [];
-            const di = d.indexOf('-');
-            const r = (di > 0) ? d.substring(0, di).trim() : '';
-            const nm = (di > 0 && d.substring(di + 1).trim()) ? d.substring(di + 1).trim() : d;
+            // Usar os campos dedicados de Ref, Ref Interna e Designação
+            const refVal = document.getElementById('ns-peca-ref') ? document.getElementById('ns-peca-ref').value.trim() : '';
+            const refInternaVal = document.getElementById('ns-peca-ref-interna') ? document.getElementById('ns-peca-ref-interna').value.trim() : '';
+            const nomeVal = document.getElementById('ns-peca-nome') ? document.getElementById('ns-peca-nome').value.trim() : '';
+            // Fallback: se os campos novos estão vazios, fazer parse como antes
+            let r = refVal;
+            let nm = nomeVal || d;
+            if(!r && !nomeVal) {
+                const di = d.indexOf('-');
+                r = (di > 0) ? d.substring(0, di).trim() : '';
+                nm = (di > 0 && d.substring(di + 1).trim()) ? d.substring(di + 1).trim() : d;
+            }
             db.pecas.push({
                 id: pid, clienteId: cid, ref: r, name: nm,
-                refInterna: document.getElementById('ns-p-ref-interna').value,
+                refInterna: refInternaVal || (document.getElementById('ns-p-ref-interna') ? document.getElementById('ns-p-ref-interna').value : ''),
                 dm2: document.getElementById('ns-p-dm2').value,
                 peso: parseFloat(document.getElementById('ns-p-peso').value.toString().replace(',','.')) || 0,
                 potencia: parseFloat(document.getElementById('ns-p-potencia').value) || 0,
@@ -713,20 +783,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if(!db.servicos) db.servicos = [];
+        // Verificar se a peça mestre tem fotoDefault para herdar
+        const pecaMestre = (db.pecas || []).find(x => x.id === pid);
+        const fotoHerdada = pecaMestre && pecaMestre.fotoDefault ? true : false;
         db.servicos.push({
             id: Date.now() + 2, partId: pid, clienteId: cid,
             guia: document.getElementById('ns-guia').value, qty: parseInt(document.getElementById('ns-quantidade').value),
             dataEntrada: document.getElementById('ns-data-entrada').value, dataPrevista: document.getElementById('ns-data-prevista').value,
             status: document.getElementById('ns-estado').value, dataReal: null,
-            observacoes: document.getElementById('ns-observacoes').value || ''
+            observacoes: document.getElementById('ns-observacoes').value || '',
+            foto: fotoHerdada
         });
         saveDB(db); showToast('Guardado!'); e.target.reset(); 
         document.getElementById('new-service-form').classList.add('hidden');
+        const idSec = document.getElementById('ns-peca-identity'); if(idSec) idSec.classList.add('hidden');
+        const obsAntGrp = document.getElementById('ns-obs-anterior-group'); if(obsAntGrp) obsAntGrp.classList.add('hidden');
+        // Limpar campos de identidade (estão fora do form)
+        const nsRef = document.getElementById('ns-peca-ref'); if(nsRef) { nsRef.value = ''; nsRef.disabled = false; }
+        const nsRefInt = document.getElementById('ns-peca-ref-interna'); if(nsRefInt) { nsRefInt.value = ''; nsRefInt.disabled = false; }
+        const nsNome = document.getElementById('ns-peca-nome'); if(nsNome) { nsNome.value = ''; nsNome.disabled = false; }
+        nsInpCliente.value = ''; nsInpPeca.value = '';
         nsInpPeca.disabled = true; refreshData('dashboard');
     };
 
     document.getElementById('btn-cancel-service').onclick = () => { 
-        document.getElementById('new-service-form').classList.add('hidden'); nsInpPeca.disabled = true; 
+        document.getElementById('new-service-form').classList.add('hidden');
+        const idSec = document.getElementById('ns-peca-identity'); if(idSec) idSec.classList.add('hidden');
+        const obsAntGrp = document.getElementById('ns-obs-anterior-group'); if(obsAntGrp) obsAntGrp.classList.add('hidden');
+        const nsRef = document.getElementById('ns-peca-ref'); if(nsRef) { nsRef.value = ''; nsRef.disabled = false; }
+        const nsRefInt = document.getElementById('ns-peca-ref-interna'); if(nsRefInt) { nsRefInt.value = ''; nsRefInt.disabled = false; }
+        const nsNome = document.getElementById('ns-peca-nome'); if(nsNome) { nsNome.value = ''; nsNome.disabled = false; }
+        nsInpPeca.disabled = true; 
     };
 
     // Função para guardar foto na ficha de detalhe
@@ -737,6 +824,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = (db.servicos || []).find(x => x.id === sid);
         if(s) {
             s.foto = checkbox.checked;
+            // Guardar também na peça mestre para que fique memorizado
+            const p = (db.pecas || []).find(x => x.id === s.partId);
+            if(p) p.fotoDefault = checkbox.checked;
             saveDB(db);
             const badge = document.getElementById('dv-foto-badge');
             if(badge) { badge.textContent = checkbox.checked ? '✅ Foto Registada' : ''; }
@@ -750,6 +840,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = (db.servicos || []).find(x => x.id === servicoId);
         if(s) {
             s.foto = checkbox.checked;
+            // Guardar também na peça mestre para que fique memorizado
+            const p = (db.pecas || []).find(x => x.id === s.partId);
+            if(p) p.fotoDefault = checkbox.checked;
             // Guardar apenas localmente + Firebase (sem redesenhar a tabela)
             saveLocalBackup(db);
             if (dbRef) dbRef.set(db).catch(() => {});

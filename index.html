@@ -137,6 +137,15 @@
                             </div>
                         </div>
                         
+                        <div id="ns-peca-identity" class="hidden mt-1" style="border-top: 1px dashed var(--border-color); padding-top: 1rem;">
+                            <h4 style="color:#555; margin-bottom: 0.8rem;"><i class="fa-solid fa-fingerprint" style="color:var(--primary);"></i> Identificação da Peça</h4>
+                            <div class="grid-3">
+                                <div class="input-group"><label>Ref</label><input type="text" id="ns-peca-ref" maxlength="100" placeholder="Ref. do cliente / desenho"></div>
+                                <div class="input-group"><label>Ref Interna</label><input type="text" id="ns-peca-ref-interna" maxlength="100" placeholder="Ref. interna Tratinox"></div>
+                                <div class="input-group"><label>Designação</label><input type="text" id="ns-peca-nome" maxlength="150" placeholder="Nome / descrição da peça"></div>
+                            </div>
+                        </div>
+                        
                         <form id="new-service-form" class="hidden mt-2" style="border-top: 2px solid var(--primary-light); padding-top: 1rem;">
                             <input type="hidden" id="ns-part-id">
                             <input type="hidden" id="ns-cliente-id">
@@ -156,6 +165,10 @@
                             <h4 class="mt-1" style="color:var(--primary);">Parâmetros Técnicos (Editar se necessário)</h4>
                             <div class="grid-4" id="ns-parametros"></div>
                             
+                            <div id="ns-obs-anterior-group" class="hidden mt-1" style="background:rgba(245,158,11,0.06);border:1px dashed rgba(245,158,11,0.4);border-radius:8px;padding:0.8rem 1rem;">
+                                <label style="font-size:0.85rem;color:#b45309;font-weight:700;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-clock-rotate-left"></i> Observações do Último Serviço desta Peça</label>
+                                <textarea id="ns-obs-anterior" rows="2" disabled style="margin-top:6px;background:#fffbeb;color:#78350f;font-style:italic;"></textarea>
+                            </div>
                             <div class="input-group mt-1"><label>Observações do Serviço</label><textarea id="ns-observacoes" rows="2" placeholder="Notas sobre esta guia específica..."></textarea></div>
 
                             <div class="form-actions mt-2">
@@ -195,7 +208,7 @@
                             <div class="input-group"><label>Potência (A)</label><input type="text" id="ed-potencia"></div>
                             <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="ed-ciclo"></div>
                             <div class="input-group"><label>Peso (kg)</label><input type="text" id="ed-peso" placeholder="Ex: 0,5 ou 3,2"></div>
-                            <div class="input-group"><label>Ref Interna</label><input type="text" id="ed-ref-interna" placeholder="Ref. interna"></div>
+                            <div class="input-group"><label>Ref Interna</label><input type="text" id="ed-ref-interna" placeholder="Ref. interna" maxlength="100"></div>
                             <div class="input-group"><label>Tipo de Inox</label><input type="text" id="ed-tipo-inox" placeholder="Ex: 304, 316L..."></div>
                             <div class="input-group"><label>Comprimento (mm)</label><input type="text" id="ed-comprimento"></div>
                             <div class="input-group"><label>Altura (mm)</label><input type="text" id="ed-altura"></div>
@@ -222,7 +235,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Cliente</th><th>Guia</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th style="text-align:center;"><i class="fa-solid fa-camera"></i> Foto</th><th>Ações</th>
+                                        <th>Cliente</th><th>Guia</th><th>Ref</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th style="text-align:center;"><i class="fa-solid fa-camera"></i> Foto</th><th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-trabalhos"></tbody>
@@ -326,8 +339,8 @@
                             
                             <h5 style="margin-bottom: 0.5rem; color: #555;">Detalhes Base</h5>
                             <div class="grid-3">
-                                <div class="input-group"><label>Ref *</label><input type="text" id="np-ref"></div>
-                                <div class="input-group"><label>Designação *</label><input type="text" id="np-nome"></div>
+                                <div class="input-group"><label>Ref *</label><input type="text" id="np-ref" maxlength="100"></div>
+                                <div class="input-group"><label>Designação *</label><input type="text" id="np-nome" maxlength="150"></div>
                                 <div class="input-group">
                                     <label>Cliente *</label>
                                     <div style="display:flex; gap:10px;">
@@ -335,7 +348,7 @@
                                         <button class="btn secondary-btn" type="button" id="btn-novo-cliente">+</button>
                                     </div>
                                 </div>
-                                <div class="input-group"><label>Ref Interna</label><input type="text" id="np-ref-interna" placeholder="Ref. interna da empresa"></div>
+                                <div class="input-group"><label>Ref Interna</label><input type="text" id="np-ref-interna" placeholder="Ref. interna da empresa" maxlength="100"></div>
                                 <div class="input-group"><label>Peso (kg)</label><input type="text" id="np-peso" placeholder="Ex: 0,5 ou 3,2"></div>
                                 <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="np-ciclo"></div>
                                 <div class="input-group"><label>Potência (A)</label><input type="text" id="np-potencia"></div>
