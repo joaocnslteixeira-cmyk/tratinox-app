@@ -666,16 +666,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Se peça existente, desabilitar ref/nome (só editáveis na ficha de edição)
-            if(found) {
-                if(refField) refField.disabled = true;
-                if(nomeField) nomeField.disabled = true;
-                if(refInternaField) refInternaField.disabled = true;
-            } else {
-                if(refField) refField.disabled = false;
-                if(nomeField) nomeField.disabled = false;
-                if(refInternaField) refInternaField.disabled = false;
-            }
+            // Manter sempre editáveis para o utilizador poder ajustar se necessário
+            if(refField) refField.disabled = false;
+            if(nomeField) nomeField.disabled = false;
+            if(refInternaField) refInternaField.disabled = false;
             
             // Mostrar observações do último serviço desta peça (se existir) e preencher no novo serviço
             const obsAnteriorGroup = document.getElementById('ns-obs-anterior-group');
@@ -768,7 +762,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const p = db.pecas.find(x => x.id === pid);
             if(p) {
-                p.refInterna = document.getElementById('ns-p-ref-interna').value;
+                const editRef = document.getElementById('ns-peca-ref');
+                if(editRef && editRef.value !== undefined) p.ref = editRef.value.trim();
+                const editNome = document.getElementById('ns-peca-nome');
+                if(editNome && editNome.value.trim()) p.name = editNome.value.trim();
+                const editRefInt = document.getElementById('ns-peca-ref-interna');
+                p.refInterna = (editRefInt && editRefInt.value.trim()) ? editRefInt.value.trim() : document.getElementById('ns-p-ref-interna').value;
                 p.dm2 = document.getElementById('ns-p-dm2').value;
                 if(document.getElementById('ns-p-tipo-inox')) p.tipoInox = document.getElementById('ns-p-tipo-inox').value;
                 p.peso = parseFloat(document.getElementById('ns-p-peso').value.toString().replace(',','.')) || 0;
