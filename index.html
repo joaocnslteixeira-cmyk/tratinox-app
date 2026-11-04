@@ -202,18 +202,22 @@
                             <textarea id="ed-observacoes" rows="3" placeholder="Registe anomalias, observações de banho ou especificações desta remessa..."></textarea>
                         </div>
 
-                        <h5 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #555;">Afinação da Receita Mestre <small style="font-weight:normal;">(atualiza no sistema para todos os trabalhos futuros)</small></h5>
+                        <h5 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #555;">Afinação da Peça & Receita Mestre <small style="font-weight:normal;">(atualiza no sistema para todos os trabalhos futuros)</small></h5>
+                        <div class="grid-3 mt-1">
+                            <div class="input-group"><label>Ref</label><input type="text" id="ed-ref" placeholder="Ref. do cliente / desenho" maxlength="100"></div>
+                            <div class="input-group"><label>Ref Interna</label><input type="text" id="ed-ref-interna" placeholder="Ref. interna" maxlength="100"></div>
+                            <div class="input-group"><label>Designação</label><input type="text" id="ed-nome" placeholder="Designação da peça" maxlength="150"></div>
+                        </div>
                         <div class="grid-3 mt-1">
                             <div class="input-group"><label>Área (dm²)</label><input type="text" id="ed-dm2"></div>
                             <div class="input-group"><label>Potência (A)</label><input type="text" id="ed-potencia"></div>
                             <div class="input-group"><label>Peças/Ciclo</label><input type="number" id="ed-ciclo"></div>
                             <div class="input-group"><label>Peso (kg)</label><input type="text" id="ed-peso" placeholder="Ex: 0,5 ou 3,2"></div>
-                            <div class="input-group"><label>Ref Interna</label><input type="text" id="ed-ref-interna" placeholder="Ref. interna" maxlength="100"></div>
                             <div class="input-group"><label>Tipo de Inox</label><input type="text" id="ed-tipo-inox" placeholder="Ex: 304, 316L..."></div>
+                            <div class="input-group"><label>Diâmetro (mm)</label><input type="text" id="ed-diametro"></div>
                             <div class="input-group"><label>Comprimento (mm)</label><input type="text" id="ed-comprimento"></div>
                             <div class="input-group"><label>Altura (mm)</label><input type="text" id="ed-altura"></div>
                             <div class="input-group"><label>Largura (mm)</label><input type="text" id="ed-largura"></div>
-                            <div class="input-group"><label>Diâmetro (mm)</label><input type="text" id="ed-diametro"></div>
                             <div class="input-group"><label>Desengorduramento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-deseng"><input style="flex:1;" type="text" id="ed-deseng-tempo"></div></div>
                             <div class="input-group"><label>Decapagem</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-decap"><input style="flex:1;" type="text" id="ed-decap-tempo"></div></div>
                             <div class="input-group"><label>Eletropolimento</label><div style="display:flex;gap:8px;"><input style="flex:2;" type="text" id="ed-electro"><input style="flex:1;" type="text" id="ed-electro-tempo"></div></div>

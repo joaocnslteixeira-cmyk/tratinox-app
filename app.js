@@ -477,11 +477,13 @@ window.abrirEdicao = function(servicoId) {
     }
     setVal('ed-observacoes', s.observacoes);
     if(p) {
+        setVal('ed-ref', p.ref);
+        setVal('ed-ref-interna', p.refInterna);
+        setVal('ed-nome', p.name);
         setVal('ed-dm2', p.dm2);
         setVal('ed-potencia', p.potencia);
         setVal('ed-ciclo', p.ciclo);
         setVal('ed-peso', p.peso);
-        setVal('ed-ref-interna', p.refInterna);
         setVal('ed-tipo-inox', p.tipoInox);
         setVal('ed-comprimento', p.comprimento);
         setVal('ed-comp', p.comprimento);
@@ -540,12 +542,16 @@ window.guardarEdicao = function() {
     if(p) {
         const cVal = parseInt(getVal('ed-cliente'));
         if(!isNaN(cVal)) p.clienteId = cVal;
+        const refVal = getVal('ed-ref', null, null);
+        if(refVal !== null) p.ref = refVal.trim();
+        const nomeVal = getVal('ed-nome', null, null);
+        if(nomeVal !== null && nomeVal.trim()) p.name = nomeVal.trim();
+        p.refInterna = getVal('ed-ref-interna', null, p.refInterna || '');
         p.dm2 = getVal('ed-dm2', null, p.dm2 || '');
         p.potencia = parseFloat(getVal('ed-potencia', null, p.potencia || 0)) || p.potencia;
         p.ciclo = parseInt(getVal('ed-ciclo', null, p.ciclo || 0)) || 0;
         const pesoRaw = getVal('ed-peso', null, p.peso || 0);
         p.peso = parseFloat(pesoRaw.toString().replace(',','.')) || p.peso;
-        p.refInterna = getVal('ed-ref-interna', null, p.refInterna || '');
         p.tipoInox = getVal('ed-tipo-inox', null, p.tipoInox || '');
         p.comprimento = getVal('ed-comprimento', 'ed-comp', p.comprimento || '');
         p.altura = getVal('ed-altura', 'ed-alt', p.altura || '');
