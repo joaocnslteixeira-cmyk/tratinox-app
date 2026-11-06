@@ -202,7 +202,7 @@ function refreshData(id) {
             const services = grouped[cid];
             const headerRow = document.createElement('tr');
             headerRow.className = 'client-group-header';
-            headerRow.innerHTML = `<td colspan="10"><i class="fa-solid fa-chevron-right"></i> ${client ? client.name : 'Cliente Desconhecido'} <span class="badge">${services.length}</span></td>`;
+            headerRow.innerHTML = `<td colspan="11"><i class="fa-solid fa-chevron-right"></i> ${client ? client.name : 'Cliente Desconhecido'} <span class="badge">${services.length}</span></td>`;
             headerRow.onclick = () => {
                 const isExpanded = headerRow.classList.toggle('expanded');
                 const workRows = tbody.querySelectorAll(`.work-of-client-${cid}`);
@@ -230,15 +230,26 @@ function refreshData(id) {
                     <input type="checkbox" ${fotoChecked} onchange="toggleFotoLista(${s.id}, this)">
                     <span>${s.foto ? '<i class="fa-solid fa-circle-check" style="color:#10b981;font-size:1.2rem;"></i>' : '<i class="fa-regular fa-circle" style="color:#ccc;font-size:1.2rem;"></i>'}</span>
                 </label></td>`;
+
+                // Badge de trabalhador atribuído
+                let trabBadge = '<span style="color:#94a3b8;font-size:0.8rem;font-style:italic;">-</span>';
+                if(s.trabalhador === 'Nuno') {
+                    trabBadge = `<span class="badge" style="background:rgba(37,99,235,0.15);color:#2563eb;font-weight:700;"><i class="fa-solid fa-user"></i> Nuno</span>`;
+                } else if(s.trabalhador === 'Marcele') {
+                    trabBadge = `<span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;font-weight:700;"><i class="fa-solid fa-user"></i> Marcele</span>`;
+                } else if(s.trabalhador === 'Cris') {
+                    trabBadge = `<span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981;font-weight:700;"><i class="fa-solid fa-user"></i> Cris</span>`;
+                }
+
                 const tr = document.createElement('tr');
                 tr.className = `clickable-row work-of-client-${cid} work-row-hidden`;
                 tr.setAttribute('style', rowBg);
                 tr.onclick = () => verServico(s.id);
-                tr.innerHTML = `<td></td><td>${s.guia}${obsIcon}</td><td style="font-size:0.85rem;color:#64748b;">${p ? (p.ref || '-') : '-'}</td><td>${p ? p.name : '-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataPrevista}</td><td>${estadoBadge}</td>${fotoCell}<td style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()"><button class="btn small-btn editor-only" style="background:#475569;color:white;" onclick="abrirEdicao(${s.id})"><i class="fa-solid fa-pen-to-square"></i></button>${isPendente ? `<button class="btn small-btn editor-only" style="background:#f59e0b;color:white;" title="Mover para Em Curso" onclick="iniciarServico(${s.id})"><i class="fa-solid fa-play"></i> Iniciar</button>` : `<button class="btn small-btn primary-btn editor-only" onclick="concluirServico(${s.id})"><i class="fa-solid fa-check"></i></button>`}</td>`;
+                tr.innerHTML = `<td></td><td>${s.guia}${obsIcon}</td><td style="font-size:0.85rem;color:#64748b;">${p ? (p.ref || '-') : '-'}</td><td>${p ? p.name : '-'}</td><td>${s.qty}</td><td>${s.dataEntrada}</td><td>${s.dataPrevista}</td><td>${trabBadge}</td><td>${estadoBadge}</td>${fotoCell}<td style="display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()"><button class="btn small-btn editor-only" style="background:#475569;color:white;" onclick="abrirEdicao(${s.id})"><i class="fa-solid fa-pen-to-square"></i></button>${isPendente ? `<button class="btn small-btn editor-only" style="background:#f59e0b;color:white;" title="Mover para Em Curso" onclick="iniciarServico(${s.id})"><i class="fa-solid fa-play"></i> Iniciar</button>` : `<button class="btn small-btn primary-btn editor-only" onclick="concluirServico(${s.id})"><i class="fa-solid fa-check"></i></button>`}</td>`;
                 tbody.appendChild(tr);
             });
         });
-        if(!ativos.length) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos em curso.</td></tr>';
+        if(!ativos.length) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:3rem; color:var(--text-muted);">Sem trabalhos em curso.</td></tr>';
         enforceRoles();
     }
     if(id === 'historico') {
@@ -298,6 +309,9 @@ function refreshData(id) {
         if(!(db.clientes || []).length) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Nenhum cliente registado ainda.</td></tr>';
         enforceRoles();
     }
+    if(id === 'planeamento') {
+        renderPlaneamento();
+    }
 }
 
 window.concluirServico = function(id) {
@@ -350,6 +364,8 @@ window.verServico = function(servicoId) {
     document.getElementById('dv-entrada').value = s.dataEntrada || '';
     document.getElementById('dv-entrega').value = s.dataReal || '-';
     document.getElementById('dv-estado').value = s.status || '';
+    const trabEl = document.getElementById('dv-trabalhador');
+    if(trabEl) trabEl.value = s.trabalhador || 'Por Atribuir';
     document.getElementById('dv-observacoes').value = s.observacoes || '';
     if(p) {
         document.getElementById('dv-ref').value = p.ref || '';
@@ -469,6 +485,7 @@ window.abrirEdicao = function(servicoId) {
     setVal('ed-guia', s.guia);
     setVal('ed-data-entrada', s.dataEntrada);
     setVal('ed-data-prevista', s.dataPrevista);
+    setVal('ed-trabalhador', s.trabalhador || '');
     setVal('ed-quantidade', s.qty);
     const realGroup = document.getElementById('ed-data-real-group');
     if (realGroup) {
@@ -484,6 +501,7 @@ window.abrirEdicao = function(servicoId) {
         setVal('ed-potencia', p.potencia);
         setVal('ed-ciclo', p.ciclo);
         setVal('ed-peso', p.peso);
+        setVal('ed-ref-interna', p.refInterna);
         setVal('ed-tipo-inox', p.tipoInox);
         setVal('ed-comprimento', p.comprimento);
         setVal('ed-comp', p.comprimento);
@@ -530,6 +548,7 @@ window.guardarEdicao = function() {
         s.observacoes = getVal('ed-observacoes', null, s.observacoes || '');
         s.dataEntrada = getVal('ed-data-entrada', null, s.dataEntrada);
         s.dataPrevista = getVal('ed-data-prevista', null, s.dataPrevista);
+        s.trabalhador = getVal('ed-trabalhador', null, s.trabalhador || '');
         s.guia = getVal('ed-guia', null, s.guia) || s.guia;
         const qVal = parseInt(getVal('ed-quantidade'));
         s.qty = isNaN(qVal) ? s.qty : qVal;
@@ -552,6 +571,7 @@ window.guardarEdicao = function() {
         p.ciclo = parseInt(getVal('ed-ciclo', null, p.ciclo || 0)) || 0;
         const pesoRaw = getVal('ed-peso', null, p.peso || 0);
         p.peso = parseFloat(pesoRaw.toString().replace(',','.')) || p.peso;
+        p.refInterna = getVal('ed-ref-interna', null, p.refInterna || '');
         p.tipoInox = getVal('ed-tipo-inox', null, p.tipoInox || '');
         p.comprimento = getVal('ed-comprimento', 'ed-comp', p.comprimento || '');
         p.altura = getVal('ed-altura', 'ed-alt', p.altura || '');
@@ -651,27 +671,22 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const p = found || {};
             
-            // Preencher campos de identificação
+            // Preencher campos de identificação (sempre editáveis)
             const refField = document.getElementById('ns-peca-ref');
             const refInternaField = document.getElementById('ns-peca-ref-interna');
             const nomeField = document.getElementById('ns-peca-nome');
-            if(refField) refField.value = p.ref || '';
-            if(refInternaField) refInternaField.value = p.refInterna || '';
+            if(refField) { refField.value = p.ref || ''; refField.disabled = false; }
+            if(refInternaField) { refInternaField.value = p.refInterna || ''; refInternaField.disabled = false; }
             if(nomeField) {
                 if(found) {
                     nomeField.value = p.name || '';
                 } else if(!nomeField.value.trim()) {
-                    // Se estiver a escrever uma nova peça, sugere o texto pesquisado
                     nomeField.value = nsInpPeca.value.trim().replace(/^- ?/, '');
                 }
+                nomeField.disabled = false;
             }
             
-            // Manter sempre editáveis para o utilizador poder ajustar se necessário
-            if(refField) refField.disabled = false;
-            if(nomeField) nomeField.disabled = false;
-            if(refInternaField) refInternaField.disabled = false;
-            
-            // Mostrar observações do último serviço desta peça (se existir) e preencher no novo serviço
+            // Mostrar observações do último serviço desta peça (se existir)
             const obsAnteriorGroup = document.getElementById('ns-obs-anterior-group');
             const obsAnteriorField = document.getElementById('ns-obs-anterior');
             const obsNovoField = document.getElementById('ns-observacoes');
@@ -691,9 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if(obsAnteriorGroup) {
                 obsAnteriorGroup.classList.add('hidden');
             }
-            
             document.getElementById('ns-parametros').innerHTML = `
-                <div class="input-group"><label>Ref Interna</label><input type="text" id="ns-p-ref-interna" value="${p.refInterna||''}" maxlength="100"></div>
+                <div class="input-group"><label>Ref Interna</label><input type="text" id="ns-p-ref-interna" value="${p.refInterna||''}"></div>
                 <div class="input-group"><label>Tipo de Inox</label><input type="text" id="ns-p-tipo-inox" value="${p.tipoInox||''}" placeholder="Ex: 304, 316"></div>
                 <div class="input-group"><label>Área (dm²)</label><input type="text" id="ns-p-dm2" value="${p.dm2||''}"></div>
                 <div class="input-group"><label>Peso (kg)</label><input type="text" id="ns-p-peso" value="${p.peso||0}"></div>
@@ -730,7 +744,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const refVal = document.getElementById('ns-peca-ref') ? document.getElementById('ns-peca-ref').value.trim() : '';
             const refInternaVal = document.getElementById('ns-peca-ref-interna') ? document.getElementById('ns-peca-ref-interna').value.trim() : '';
             const nomeVal = document.getElementById('ns-peca-nome') ? document.getElementById('ns-peca-nome').value.trim() : '';
-            // Fallback: se os campos novos estão vazios, fazer parse como antes
             let r = refVal;
             let nm = nomeVal || d;
             if(!r && !nomeVal) {
@@ -803,7 +816,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('new-service-form').classList.add('hidden');
         const idSec = document.getElementById('ns-peca-identity'); if(idSec) idSec.classList.add('hidden');
         const obsAntGrp = document.getElementById('ns-obs-anterior-group'); if(obsAntGrp) obsAntGrp.classList.add('hidden');
-        // Limpar campos de identidade (estão fora do form)
         const nsRef = document.getElementById('ns-peca-ref'); if(nsRef) { nsRef.value = ''; nsRef.disabled = false; }
         const nsRefInt = document.getElementById('ns-peca-ref-interna'); if(nsRefInt) { nsRefInt.value = ''; nsRefInt.disabled = false; }
         const nsNome = document.getElementById('ns-peca-nome'); if(nsNome) { nsNome.value = ''; nsNome.disabled = false; }
@@ -919,3 +931,163 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+// --- PLANEAMENTO DIÁRIO (DRAG & DROP KANBAN) ---
+function renderPlaneamento() {
+    const db = getDB();
+    const isJoao = currentUser && currentUser.username === 'joaoteixeira';
+    const ativos = (db.servicos || []).filter(s => s.status === 'Em Curso' || s.status === 'Pendente');
+    
+    const totalBadge = document.getElementById('plan-total-badge');
+    if(totalBadge) totalBadge.textContent = `${ativos.length} Serviços em Curso`;
+
+    const cols = {
+        '': document.getElementById('kcards-unassigned'),
+        'Nuno': document.getElementById('kcards-Nuno'),
+        'Marcele': document.getElementById('kcards-Marcele'),
+        'Cris': document.getElementById('kcards-Cris')
+    };
+
+    const counts = { '': 0, 'Nuno': 0, 'Marcele': 0, 'Cris': 0 };
+
+    Object.values(cols).forEach(el => { if(el) el.innerHTML = ''; });
+
+    ativos.forEach(s => {
+        const trab = s.trabalhador && cols[s.trabalhador] ? s.trabalhador : '';
+        counts[trab] = (counts[trab] || 0) + 1;
+        const targetContainer = cols[trab];
+        if(!targetContainer) return;
+
+        const p = (db.pecas || []).find(x => x.id === s.partId);
+        const c = (db.clientes || []).find(x => x.id === s.clienteId);
+        const clientName = c ? c.name : 'Cliente Desconhecido';
+        const pecaName = p ? p.name : '-';
+        const pecaRef = p ? (p.ref || p.refInterna || '') : '';
+        const isLate = s.dataPrevista && s.dataPrevista < new Date().toISOString().split('T')[0];
+        const prazoColor = isLate ? '#dc2626' : '#64748b';
+
+        // Banhos/Parâmetros em destaque no cartão
+        const banhos = [];
+        if(p && p.decap) banhos.push(`Dec: ${p.decap}`);
+        if(p && p.electro) banhos.push(`El: ${p.electro}`);
+        if(p && p.passiv) banhos.push(`Pas: ${p.passiv}`);
+        const banhosTxt = banhos.length ? banhos.join(' • ') : '';
+
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.id = `kcard-${s.id}`;
+        card.setAttribute('draggable', isJoao ? 'true' : 'false');
+        card.style.cursor = isJoao ? 'grab' : 'pointer';
+        if(!isJoao) {
+            card.title = 'Apenas o João Teixeira pode arrastar tarefas.';
+        }
+
+        // Cor da borda esquerda conforme trabalhador
+        let cardBorder = '#64748b';
+        if(trab === 'Nuno') cardBorder = '#2563eb';
+        else if(trab === 'Marcele') cardBorder = '#a855f7';
+        else if(trab === 'Cris') cardBorder = '#10b981';
+        card.style.borderLeftColor = cardBorder;
+
+        card.innerHTML = `
+            <div class="kanban-card-header">
+                <span class="kanban-client-name">${clientName}</span>
+                <span class="kanban-guia">Guia ${s.guia || '-'}</span>
+            </div>
+            <div class="kanban-card-title">${pecaName}</div>
+            <div class="kanban-card-ref">${pecaRef ? 'Ref: ' + pecaRef : ''}</div>
+            ${banhosTxt ? `<div style="font-size:0.75rem;color:#475569;background:#f8fafc;padding:3px 6px;border-radius:4px;margin-bottom:6px;border:1px solid #e2e8f0;">⚡ ${banhosTxt}</div>` : ''}
+            ${s.observacoes ? `<div style="font-size:0.75rem;color:#b45309;background:#fffbeb;padding:3px 6px;border-radius:4px;margin-bottom:6px;"><i class="fa-solid fa-note-sticky"></i> ${s.observacoes}</div>` : ''}
+            <div class="kanban-card-footer">
+                <span class="kanban-card-qty"><i class="fa-solid fa-cubes"></i> ${s.qty || 1} peças</span>
+                <span style="color:${prazoColor};font-weight:600;"><i class="fa-regular fa-calendar"></i> ${s.dataPrevista || '-'}</span>
+            </div>
+        `;
+
+        // Eventos de Drag & Drop para o João
+        if(isJoao) {
+            card.addEventListener('dragstart', (e) => {
+                card.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', s.id.toString());
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+        }
+
+        // Clicar no cartão abre a ficha de detalhe para consultar
+        card.addEventListener('click', (e) => {
+            if(!card.classList.contains('dragging')) {
+                verServico(s.id);
+            }
+        });
+
+        targetContainer.appendChild(card);
+    });
+
+    // Atualizar contadores
+    const countUn = document.getElementById('kcount-unassigned');
+    if(countUn) countUn.textContent = counts[''] || 0;
+    const countNu = document.getElementById('kcount-Nuno');
+    if(countNu) countNu.textContent = counts['Nuno'] || 0;
+    const countMa = document.getElementById('kcount-Marcele');
+    if(countMa) countMa.textContent = counts['Marcele'] || 0;
+    const countCr = document.getElementById('kcount-Cris');
+    if(countCr) countCr.textContent = counts['Cris'] || 0;
+
+    // Mensagem de vazio quando aplicável
+    Object.keys(cols).forEach(k => {
+        const el = cols[k];
+        if(el && !el.children.length) {
+            el.innerHTML = '<div class="kanban-empty-msg"><i class="fa-regular fa-circle-check" style="margin-right:6px;"></i>Sem peças nesta coluna.</div>';
+        }
+    });
+}
+
+// Handlers Drag & Drop globais
+window.planDragOver = function(e) {
+    if(!currentUser || currentUser.username !== 'joaoteixeira') return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const container = e.currentTarget;
+    if(container) container.classList.add('drag-over');
+};
+
+window.planDragLeave = function(e) {
+    const container = e.currentTarget;
+    if(container) container.classList.remove('drag-over');
+};
+
+window.planDrop = function(e, workerName) {
+    if(!currentUser || currentUser.username !== 'joaoteixeira') {
+        showToast('Apenas o João Teixeira pode atribuir tarefas.');
+        return;
+    }
+    e.preventDefault();
+    const container = e.currentTarget;
+    if(container) container.classList.remove('drag-over');
+
+    const serviceIdStr = e.dataTransfer.getData('text/plain');
+    const sid = parseInt(serviceIdStr);
+    if(!sid) return;
+
+    const db = getDB();
+    const s = (db.servicos || []).find(x => x.id === sid);
+    if(s) {
+        const oldTrab = s.trabalhador || '';
+        if(oldTrab === workerName) return; // Nada mudou
+
+        s.trabalhador = workerName || '';
+        saveDB(db);
+
+        const msg = workerName 
+            ? `Tarefa atribuída a ${workerName}! ✅`
+            : 'Tarefa movida para Por Atribuir.';
+        showToast(msg);
+
+        // Re-renderizar o quadro de planeamento
+        renderPlaneamento();
+    }
+};

@@ -44,6 +44,7 @@
             </div>
             <ul class="nav-links">
                 <li class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</li>
+                <li data-target="planeamento"><i class="fa-solid fa-people-arrows"></i> Planeamento Diário</li>
                 <li data-target="novo-servico"><i class="fa-solid fa-plus-circle"></i> Novo Serviço</li>
                 <li data-target="trabalhos-curso"><i class="fa-solid fa-list-check"></i> Trabalhos em Curso</li>
                 <li data-target="historico"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</li>
@@ -121,6 +122,74 @@
                     </div>
                 </div>
 
+                <!-- PÁGINA: PLANEAMENTO DIÁRIO (DRAG & DROP) -->
+                <div id="page-planeamento" class="page">
+                    <div class="card">
+                        <div class="card-header-flex" style="align-items:center; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h3 style="margin:0;"><i class="fa-solid fa-people-arrows" style="color:var(--primary);"></i> Planeamento Diário por Trabalhador</h3>
+                                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
+                                    Arrasta as peças dos Trabalhos em Curso para o respetivo trabalhador (Nuno, Marcele, Cris) para organizar o dia de produção.
+                                </p>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="badge" id="plan-total-badge" style="background:rgba(37,99,235,0.1);color:var(--primary);font-size:0.85rem;padding:6px 12px;">0 Serviços em Curso</span>
+                            </div>
+                        </div>
+
+                        <!-- Quadro Kanban / Drag & Drop -->
+                        <div class="kanban-board">
+                            <!-- Coluna: A Aguardar Atribuição -->
+                            <div class="kanban-col" data-col="unassigned">
+                                <div class="kanban-col-header" style="border-top: 4px solid #64748b;">
+                                    <div class="kanban-col-title">
+                                        <i class="fa-solid fa-inbox" style="color:#64748b;"></i>
+                                        <span>Por Atribuir</span>
+                                    </div>
+                                    <span class="badge" id="kcount-unassigned">0</span>
+                                </div>
+                                <div class="kanban-cards" id="kcards-unassigned" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, '')"></div>
+                            </div>
+
+                            <!-- Coluna: Nuno -->
+                            <div class="kanban-col" data-col="Nuno">
+                                <div class="kanban-col-header" style="border-top: 4px solid #2563eb;">
+                                    <div class="kanban-col-title">
+                                        <div class="kanban-avatar" style="background:#2563eb;">N</div>
+                                        <span>Nuno</span>
+                                    </div>
+                                    <span class="badge" id="kcount-Nuno" style="background:rgba(37,99,235,0.15);color:#2563eb;">0</span>
+                                </div>
+                                <div class="kanban-cards" id="kcards-Nuno" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, 'Nuno')"></div>
+                            </div>
+
+                            <!-- Coluna: Marcele -->
+                            <div class="kanban-col" data-col="Marcele">
+                                <div class="kanban-col-header" style="border-top: 4px solid #a855f7;">
+                                    <div class="kanban-col-title">
+                                        <div class="kanban-avatar" style="background:#a855f7;">M</div>
+                                        <span>Marcele</span>
+                                    </div>
+                                    <span class="badge" id="kcount-Marcele" style="background:rgba(168,85,247,0.15);color:#a855f7;">0</span>
+                                </div>
+                                <div class="kanban-cards" id="kcards-Marcele" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, 'Marcele')"></div>
+                            </div>
+
+                            <!-- Coluna: Cris -->
+                            <div class="kanban-col" data-col="Cris">
+                                <div class="kanban-col-header" style="border-top: 4px solid #10b981;">
+                                    <div class="kanban-col-title">
+                                        <div class="kanban-avatar" style="background:#10b981;">C</div>
+                                        <span>Cris</span>
+                                    </div>
+                                    <span class="badge" id="kcount-Cris" style="background:rgba(168,85,247,0.15);color:#10b981;">0</span>
+                                </div>
+                                <div class="kanban-cards" id="kcards-Cris" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, 'Cris')"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="page-novo-servico" class="page">
                     <div class="card form-card">
                         <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-bolt" style="color:var(--primary);"></i> Novo Serviço Rápido</h3>
@@ -192,8 +261,17 @@
                             <div class="input-group"><label>Data de Entrada</label><input type="date" id="ed-data-entrada"></div>
                             <div class="input-group"><label>Quantidade ("Peças")</label><input type="number" id="ed-quantidade" placeholder="Ex: 100"></div>
                         </div>
-                        <div class="grid-2 mt-1">
+                        <div class="grid-3 mt-1">
                             <div class="input-group"><label>Saída Prevista</label><input type="date" id="ed-data-prevista"></div>
+                            <div class="input-group">
+                                <label>Trabalhador Atribuído</label>
+                                <select id="ed-trabalhador">
+                                    <option value="">(Nenhum / Por Atribuir)</option>
+                                    <option value="Nuno">Nuno</option>
+                                    <option value="Marcele">Marcele</option>
+                                    <option value="Cris">Cris</option>
+                                </select>
+                            </div>
                             <div class="input-group" id="ed-data-real-group" style="display:none;"><label>Entrega Efetiva</label><input type="date" id="ed-data-real" style="border-color:var(--success);"></div>
                         </div>
 
@@ -239,7 +317,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Cliente</th><th>Guia</th><th>Ref</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Estado</th><th style="text-align:center;"><i class="fa-solid fa-camera"></i> Foto</th><th>Ações</th>
+                                        <th>Cliente</th><th>Guia</th><th>Ref</th><th>Peça</th><th>Quant.</th><th>Entrada</th><th>Prazo</th><th>Trabalhador</th><th>Estado</th><th style="text-align:center;"><i class="fa-solid fa-camera"></i> Foto</th><th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-trabalhos"></tbody>
@@ -284,10 +362,11 @@
                         </div>
 
                         <h5 style="margin-top:1.5rem;margin-bottom:0.5rem;color:var(--primary);">Informação do Serviço</h5>
-                        <div class="grid-3">
+                        <div class="grid-4">
                             <div class="input-group"><label>Cliente</label><input type="text" id="dv-cliente" disabled></div>
                             <div class="input-group"><label>Guia de Remessa</label><input type="text" id="dv-guia" disabled></div>
                             <div class="input-group"><label>Quantidade</label><input type="text" id="dv-qty" disabled></div>
+                            <div class="input-group"><label>Trabalhador</label><input type="text" id="dv-trabalhador" disabled style="font-weight:700;color:var(--primary);"></div>
                             <div class="input-group"><label>Data de Entrada</label><input type="text" id="dv-entrada" disabled></div>
                             <div class="input-group"><label>Data de Entrega</label><input type="text" id="dv-entrega" disabled></div>
                             <div class="input-group"><label>Estado</label><input type="text" id="dv-estado" disabled></div>
