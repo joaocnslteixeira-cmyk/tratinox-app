@@ -37,10 +37,11 @@
     </div>
 
     <div id="app-view" class="view">
-        <nav class="sidebar">
+        <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fa-solid fa-industry logo-icon-small"></i>
                 <h2>TRATINOX</h2>
+                <button id="sidebar-close-btn" class="icon-btn mobile-only" onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <ul class="nav-links">
                 <li class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</li>
@@ -60,10 +61,16 @@
                 <button id="logout-btn" class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></button>
             </div>
         </nav>
+        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
         <main class="content">
             <header class="topbar">
-                <h2 id="page-title">Dashboard</h2>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button id="menu-toggle-btn" class="icon-btn mobile-only" onclick="toggleSidebar()" style="font-size:1.3rem;">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h2 id="page-title">Dashboard</h2>
+                </div>
                 <div class="date-widget" id="current-date">--/--/----</div>
             </header>
 

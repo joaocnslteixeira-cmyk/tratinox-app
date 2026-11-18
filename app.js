@@ -133,7 +133,19 @@ const switchPage = (id) => {
     if(pg) pg.classList.add('active');
     const nl = document.querySelector(`.nav-links li[data-target="${id}"]`);
     if(nl) nl.classList.add('active');
+    // Fechar menu gaveta no mobile/tablet se estiver aberto
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if(sidebar) sidebar.classList.remove('mobile-open');
+    if(overlay) overlay.classList.remove('active');
     refreshData(id);
+};
+
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if(sidebar) sidebar.classList.toggle('mobile-open');
+    if(overlay) overlay.classList.toggle('active');
 };
 
 function enforceRoles() {
@@ -984,7 +996,7 @@ window.planFiltrarTrab = function(trab) {
 
 function renderPlaneamento() {
     const db = getDB();
-    const isJoao = currentUser && currentUser.username === 'joaoteixeira';
+    const canPlan = currentUser && (currentUser.username === 'joaoteixeira' || currentUser.username === 'carina');
     const ativos = (db.servicos || []).filter(s => s.status === 'Em Curso' || s.status === 'Pendente');
 
     // Sincronizar inputs de data no DOM
@@ -1037,7 +1049,7 @@ function renderPlaneamento() {
             counts['']++;
             qtys[''] += (s.qty || 1);
             if(cols['']) {
-                cols[''].appendChild(criarCardKanban(s, db, isJoao, ''));
+                cols[''].appendChild(criarCardKanban(s, db, canPlan, ''));
             }
             return;
         }
@@ -1049,7 +1061,7 @@ function renderPlaneamento() {
         if(pertenceAoDia && cols[trab]) {
             counts[trab] = (counts[trab] || 0) + 1;
             qtys[trab] = (qtys[trab] || 0) + (s.qty || 1);
-            cols[trab].appendChild(criarCardKanban(s, db, isJoao, trab));
+            cols[trab].appendChild(criarCardKanban(s, db, canPlan, trab));
         }
     });
 
@@ -1076,7 +1088,7 @@ function renderPlaneamento() {
     });
 }
 
-function criarCardKanban(s, db, isJoao, trab) {
+function criarCardKanban(s, db, canPlan, trab) {
     const p = (db.pecas || []).find(x => x.id === s.partId);
     const c = (db.clientes || []).find(x => x.id === s.clienteId);
     const clientName = c ? c.name : 'Cliente Desconhecido';
@@ -1095,10 +1107,10 @@ function criarCardKanban(s, db, isJoao, trab) {
     const card = document.createElement('div');
     card.className = 'kanban-card';
     card.id = `kcard-${s.id}`;
-    card.setAttribute('draggable', isJoao ? 'true' : 'false');
-    card.style.cursor = isJoao ? 'grab' : 'pointer';
-    if(!isJoao) {
-        card.title = 'Apenas o João Teixeira pode arrastar tarefas.';
+    card.setAttribute('draggable', canPlan ? 'true' : 'false');
+    card.style.cursor = canPlan ? 'grab' : 'pointer';
+    if(!canPlan) {
+        card.title = 'Apenas o João Teixeira e a Carina podem atribuir tarefas.';
     }
 
     let cardBorder = '#64748b';
@@ -1108,6 +1120,22 @@ function criarCardKanban(s, db, isJoao, trab) {
     card.style.borderLeftColor = cardBorder;
 
     const dataPlaneadaBadge = s.dataPlaneada ? `<span style="font-size:0.75rem;background:rgba(37,99,235,0.08);color:#2563eb;padding:2px 6px;border-radius:4px;font-weight:600;"><i class="fa-solid fa-calendar-check"></i> ${s.dataPlaneada}</span>` : '';
+
+    // Seletor rápido de atribuição (ideal para iPad/Tablet touch e telemóvel)
+    let quickAssignHtml = '';
+    if(canPlan) {
+        quickAssignHtml = `
+            <div class="kanban-quick-assign">
+                <select class="kanban-quick-select" onchange="planMoverRapido(${s.id}, this.value)" onclick="event.stopPropagation()">
+                    <option value="" disabled selected>👉 Atribuir / Mover...</option>
+                    <option value="Nuno" ${trab === 'Nuno' ? 'disabled' : ''}>➜ Nuno</option>
+                    <option value="Marcele" ${trab === 'Marcele' ? 'disabled' : ''}>➜ Marcele</option>
+                    <option value="Cris" ${trab === 'Cris' ? 'disabled' : ''}>➜ Cris</option>
+                    <option value="POR_ATRIBUIR" ${!trab ? 'disabled' : ''}>➜ Desatribuir (Por Atribuir)</option>
+                </select>
+            </div>
+        `;
+    }
 
     card.innerHTML = `
         <div class="kanban-card-header">
@@ -1125,10 +1153,11 @@ function criarCardKanban(s, db, isJoao, trab) {
                 <span style="color:${prazoColor};font-weight:600;" title="Prazo de entrega"><i class="fa-regular fa-clock"></i> ${s.dataPrevista || '-'}</span>
             </div>
         </div>
+        ${quickAssignHtml}
     `;
 
-    // Eventos de Drag & Drop para o João
-    if(isJoao) {
+    // Eventos de Drag & Drop para utilizadores com permissão
+    if(canPlan) {
         card.addEventListener('dragstart', (e) => {
             card.classList.add('dragging');
             e.dataTransfer.setData('text/plain', s.id.toString());
@@ -1150,9 +1179,34 @@ function criarCardKanban(s, db, isJoao, trab) {
     return card;
 }
 
+// Atribuição Rápida 1-toque para iPad, Tablet e Telemóvel
+window.planMoverRapido = function(serviceId, workerChoice) {
+    if(!currentUser || (currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina')) {
+        showToast('Apenas o João Teixeira e a Carina podem atribuir tarefas.');
+        return;
+    }
+    const db = getDB();
+    const s = (db.servicos || []).find(x => x.id === serviceId);
+    if(!s) return;
+
+    if(workerChoice === 'POR_ATRIBUIR') {
+        s.trabalhador = '';
+        s.dataPlaneada = '';
+        saveDB(db);
+        showToast('Tarefa movida para Por Atribuir.');
+    } else if(workerChoice) {
+        s.trabalhador = workerChoice;
+        s.dataPlaneada = currentPlanDate;
+        saveDB(db);
+        showToast(`Tarefa atribuída a ${workerChoice} para ${formatarDataExtenso(currentPlanDate)}! ✅`);
+    }
+
+    renderPlaneamento();
+};
+
 // Handlers Drag & Drop globais
 window.planDragOver = function(e) {
-    if(!currentUser || currentUser.username !== 'joaoteixeira') return;
+    if(!currentUser || (currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina')) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const container = e.currentTarget;
@@ -1165,8 +1219,8 @@ window.planDragLeave = function(e) {
 };
 
 window.planDrop = function(e, workerName) {
-    if(!currentUser || currentUser.username !== 'joaoteixeira') {
-        showToast('Apenas o João Teixeira pode atribuir tarefas.');
+    if(!currentUser || (currentUser.username !== 'joaoteixeira' && currentUser.username !== 'carina')) {
+        showToast('Apenas o João Teixeira e a Carina podem atribuir tarefas.');
         return;
     }
     e.preventDefault();

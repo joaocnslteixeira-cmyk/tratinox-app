@@ -85,27 +85,87 @@ body { font-family: var(--font-family); background: var(--bg-dark); color: var(-
 .toast { background: var(--sidebar-dark); color: var(--text-main); border-left: 4px solid var(--primary); padding: 1rem; border-radius: 6px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
 
 /* --- RESPONSIVIDADE (Mobile & Tablets) --- */
-@media (max-width: 900px) {
-    .stats-grid, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+.mobile-only {
+    display: none !important;
+}
+
+#sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 998;
+    transition: opacity 0.3s ease;
+}
+
+#sidebar-overlay.active {
+    display: block;
+}
+
+@media (max-width: 992px) {
+    .mobile-only {
+        display: inline-flex !important;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 270px;
+        height: 100vh;
+        z-index: 999;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+    }
+
+    .sidebar.mobile-open {
+        left: 0;
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .topbar {
+        padding: 0 1rem;
+        height: 60px;
+    }
+
+    .page-content {
+        padding: 1rem;
+    }
+
+    .stats-grid, .grid-4, .grid-3, .grid-2 {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 768px) {
-    body { flex-direction: column; overflow-y: auto; }
-    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); flex-direction: row; flex-wrap: wrap; height: auto; }
-    .sidebar-header { width: 100%; justify-content: center; border-bottom: none; padding: 1rem; }
-    .nav-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding: 0.5rem; }
-    .nav-links li { padding: 0.5rem 0.8rem; margin: 0; font-size: 0.9rem; }
-    .user-info { width: 100%; justify-content: center; padding: 0.5rem; }
-    
-    .content { flex: 1; }
-    .page-content { padding: 1rem; }
-    .card { padding: 1rem; }
-    
-    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .data-table th, .data-table td { padding: 0.75rem 0.5rem; font-size: 0.85rem; }
-    
-    .topbar { padding: 0 1rem; height: 60px; }
-    #page-title { font-size: 1.2rem; }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .data-table th, .data-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    #page-title {
+        font-size: 1.15rem;
+    }
+    .card {
+        padding: 1rem;
+    }
 }
 
 .clickable-row:hover {
@@ -552,4 +612,34 @@ body { font-family: var(--font-family); background: var(--bg-dark); color: var(-
     border: 1px dashed var(--border-color);
     border-radius: 8px;
     background: rgba(255,255,255,0.5);
+}
+
+/* Quick Touch/Click Assignment Dropdown on Kanban Cards (Mobile & Tablet Friendly) */
+.kanban-quick-assign {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.kanban-quick-select {
+    width: 100%;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.kanban-quick-select:hover, .kanban-quick-select:focus {
+    border-color: var(--primary);
+    background: #ffffff;
 }
