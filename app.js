@@ -366,6 +366,8 @@ window.verServico = function(servicoId) {
     document.getElementById('dv-estado').value = s.status || '';
     const trabEl = document.getElementById('dv-trabalhador');
     if(trabEl) trabEl.value = s.trabalhador || 'Por Atribuir';
+    const planDiaEl = document.getElementById('dv-data-planeada');
+    if(planDiaEl) planDiaEl.value = s.dataPlaneada || '-';
     document.getElementById('dv-observacoes').value = s.observacoes || '';
     if(p) {
         document.getElementById('dv-ref').value = p.ref || '';
@@ -486,6 +488,7 @@ window.abrirEdicao = function(servicoId) {
     setVal('ed-data-entrada', s.dataEntrada);
     setVal('ed-data-prevista', s.dataPrevista);
     setVal('ed-trabalhador', s.trabalhador || '');
+    setVal('ed-data-planeada', s.dataPlaneada || '');
     setVal('ed-quantidade', s.qty);
     const realGroup = document.getElementById('ed-data-real-group');
     if (realGroup) {
@@ -549,6 +552,7 @@ window.guardarEdicao = function() {
         s.dataEntrada = getVal('ed-data-entrada', null, s.dataEntrada);
         s.dataPrevista = getVal('ed-data-prevista', null, s.dataPrevista);
         s.trabalhador = getVal('ed-trabalhador', null, s.trabalhador || '');
+        s.dataPlaneada = getVal('ed-data-planeada', null, s.dataPlaneada || '');
         s.guia = getVal('ed-guia', null, s.guia) || s.guia;
         const qVal = parseInt(getVal('ed-quantidade'));
         s.qty = isNaN(qVal) ? s.qty : qVal;
@@ -932,118 +936,218 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- PLANEAMENTO DIÁRIO (DRAG & DROP KANBAN) ---
+// --- PLANEAMENTO DIÁRIO (DRAG & DROP KANBAN POR DIA E TRABALHADOR) ---
+let currentPlanDate = new Date().toISOString().split('T')[0];
+let currentPlanWorker = 'todos'; // 'todos' | 'Nuno' | 'Marcele' | 'Cris'
+
+function formatarDataExtenso(dateStr) {
+    if(!dateStr) return '';
+    const parts = dateStr.split('-');
+    if(parts.length !== 3) return dateStr;
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const hoje = new Date().toISOString().split('T')[0];
+    const prefixo = (dateStr === hoje) ? 'Hoje • ' : '';
+    return `${prefixo}${diasSemana[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]}`;
+}
+
+window.planMudarDia = function(offset) {
+    const parts = currentPlanDate.split('-');
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    d.setDate(d.getDate() + offset);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    currentPlanDate = `${yyyy}-${mm}-${dd}`;
+    renderPlaneamento();
+};
+
+window.planSetData = function(dateVal) {
+    if(!dateVal) return;
+    currentPlanDate = dateVal;
+    renderPlaneamento();
+};
+
+window.planIrHoje = function() {
+    currentPlanDate = new Date().toISOString().split('T')[0];
+    renderPlaneamento();
+};
+
+window.planFiltrarTrab = function(trab) {
+    currentPlanWorker = trab;
+    document.querySelectorAll('.plan-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.getAttribute('data-trab') === trab);
+    });
+    renderPlaneamento();
+};
+
 function renderPlaneamento() {
     const db = getDB();
     const isJoao = currentUser && currentUser.username === 'joaoteixeira';
     const ativos = (db.servicos || []).filter(s => s.status === 'Em Curso' || s.status === 'Pendente');
-    
-    const totalBadge = document.getElementById('plan-total-badge');
-    if(totalBadge) totalBadge.textContent = `${ativos.length} Serviços em Curso`;
 
+    // Sincronizar inputs de data no DOM
+    const dataInput = document.getElementById('plan-data-input');
+    if(dataInput && dataInput.value !== currentPlanDate) {
+        dataInput.value = currentPlanDate;
+    }
+    const dataExtenso = document.getElementById('plan-data-extenso');
+    if(dataExtenso) {
+        dataExtenso.textContent = formatarDataExtenso(currentPlanDate);
+    }
+
+    const totalBadge = document.getElementById('plan-total-badge');
+    if(totalBadge) totalBadge.textContent = `${ativos.length} Serviços em Produção`;
+
+    // Visibilidade das colunas conforme filtro selecionado
+    const boardContainer = document.getElementById('kanban-board-container');
+    const colUn = document.getElementById('kcol-unassigned');
+    const colNu = document.getElementById('kcol-Nuno');
+    const colMa = document.getElementById('kcol-Marcele');
+    const colCr = document.getElementById('kcol-Cris');
+
+    if(boardContainer) {
+        boardContainer.classList.toggle('single-worker', currentPlanWorker !== 'todos');
+    }
+    if(colUn) colUn.style.display = '';
+    if(colNu) colNu.style.display = (currentPlanWorker === 'todos' || currentPlanWorker === 'Nuno') ? '' : 'none';
+    if(colMa) colMa.style.display = (currentPlanWorker === 'todos' || currentPlanWorker === 'Marcele') ? '' : 'none';
+    if(colCr) colCr.style.display = (currentPlanWorker === 'todos' || currentPlanWorker === 'Cris') ? '' : 'none';
+
+    // Contagens gerais do dia selecionado
+    const counts = { '': 0, 'Nuno': 0, 'Marcele': 0, 'Cris': 0 };
+    const qtys = { '': 0, 'Nuno': 0, 'Marcele': 0, 'Cris': 0 };
+
+    // Limpar cartões
     const cols = {
         '': document.getElementById('kcards-unassigned'),
         'Nuno': document.getElementById('kcards-Nuno'),
         'Marcele': document.getElementById('kcards-Marcele'),
         'Cris': document.getElementById('kcards-Cris')
     };
-
-    const counts = { '': 0, 'Nuno': 0, 'Marcele': 0, 'Cris': 0 };
-
     Object.values(cols).forEach(el => { if(el) el.innerHTML = ''; });
 
     ativos.forEach(s => {
-        const trab = s.trabalhador && cols[s.trabalhador] ? s.trabalhador : '';
-        counts[trab] = (counts[trab] || 0) + 1;
-        const targetContainer = cols[trab];
-        if(!targetContainer) return;
+        const trab = s.trabalhador || '';
+        const dataPlan = s.dataPlaneada || '';
 
-        const p = (db.pecas || []).find(x => x.id === s.partId);
-        const c = (db.clientes || []).find(x => x.id === s.clienteId);
-        const clientName = c ? c.name : 'Cliente Desconhecido';
-        const pecaName = p ? p.name : '-';
-        const pecaRef = p ? (p.ref || p.refInterna || '') : '';
-        const isLate = s.dataPrevista && s.dataPrevista < new Date().toISOString().split('T')[0];
-        const prazoColor = isLate ? '#dc2626' : '#64748b';
-
-        // Banhos/Parâmetros em destaque no cartão
-        const banhos = [];
-        if(p && p.decap) banhos.push(`Dec: ${p.decap}`);
-        if(p && p.electro) banhos.push(`El: ${p.electro}`);
-        if(p && p.passiv) banhos.push(`Pas: ${p.passiv}`);
-        const banhosTxt = banhos.length ? banhos.join(' • ') : '';
-
-        const card = document.createElement('div');
-        card.className = 'kanban-card';
-        card.id = `kcard-${s.id}`;
-        card.setAttribute('draggable', isJoao ? 'true' : 'false');
-        card.style.cursor = isJoao ? 'grab' : 'pointer';
-        if(!isJoao) {
-            card.title = 'Apenas o João Teixeira pode arrastar tarefas.';
-        }
-
-        // Cor da borda esquerda conforme trabalhador
-        let cardBorder = '#64748b';
-        if(trab === 'Nuno') cardBorder = '#2563eb';
-        else if(trab === 'Marcele') cardBorder = '#a855f7';
-        else if(trab === 'Cris') cardBorder = '#10b981';
-        card.style.borderLeftColor = cardBorder;
-
-        card.innerHTML = `
-            <div class="kanban-card-header">
-                <span class="kanban-client-name">${clientName}</span>
-                <span class="kanban-guia">Guia ${s.guia || '-'}</span>
-            </div>
-            <div class="kanban-card-title">${pecaName}</div>
-            <div class="kanban-card-ref">${pecaRef ? 'Ref: ' + pecaRef : ''}</div>
-            ${banhosTxt ? `<div style="font-size:0.75rem;color:#475569;background:#f8fafc;padding:3px 6px;border-radius:4px;margin-bottom:6px;border:1px solid #e2e8f0;">⚡ ${banhosTxt}</div>` : ''}
-            ${s.observacoes ? `<div style="font-size:0.75rem;color:#b45309;background:#fffbeb;padding:3px 6px;border-radius:4px;margin-bottom:6px;"><i class="fa-solid fa-note-sticky"></i> ${s.observacoes}</div>` : ''}
-            <div class="kanban-card-footer">
-                <span class="kanban-card-qty"><i class="fa-solid fa-cubes"></i> ${s.qty || 1} peças</span>
-                <span style="color:${prazoColor};font-weight:600;"><i class="fa-regular fa-calendar"></i> ${s.dataPrevista || '-'}</span>
-            </div>
-        `;
-
-        // Eventos de Drag & Drop para o João
-        if(isJoao) {
-            card.addEventListener('dragstart', (e) => {
-                card.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', s.id.toString());
-                e.dataTransfer.effectAllowed = 'move';
-            });
-
-            card.addEventListener('dragend', () => {
-                card.classList.remove('dragging');
-            });
-        }
-
-        // Clicar no cartão abre a ficha de detalhe para consultar
-        card.addEventListener('click', (e) => {
-            if(!card.classList.contains('dragging')) {
-                verServico(s.id);
+        // "Por Atribuir": peças sem trabalhador
+        if(!trab) {
+            counts['']++;
+            qtys[''] += (s.qty || 1);
+            if(cols['']) {
+                cols[''].appendChild(criarCardKanban(s, db, isJoao, ''));
             }
-        });
+            return;
+        }
 
-        targetContainer.appendChild(card);
+        // Peça com trabalhador: verificar se é do dia selecionado
+        // (Se não tiver dataPlaneada definida, assume como visível no dia atual para não se perder)
+        const pertenceAoDia = (dataPlan === currentPlanDate) || (!dataPlan && currentPlanDate === new Date().toISOString().split('T')[0]);
+
+        if(pertenceAoDia && cols[trab]) {
+            counts[trab] = (counts[trab] || 0) + 1;
+            qtys[trab] = (qtys[trab] || 0) + (s.qty || 1);
+            cols[trab].appendChild(criarCardKanban(s, db, isJoao, trab));
+        }
     });
 
-    // Atualizar contadores
+    // Atualizar badges das colunas
     const countUn = document.getElementById('kcount-unassigned');
     if(countUn) countUn.textContent = counts[''] || 0;
-    const countNu = document.getElementById('kcount-Nuno');
-    if(countNu) countNu.textContent = counts['Nuno'] || 0;
-    const countMa = document.getElementById('kcount-Marcele');
-    if(countMa) countMa.textContent = counts['Marcele'] || 0;
-    const countCr = document.getElementById('kcount-Cris');
-    if(countCr) countCr.textContent = counts['Cris'] || 0;
+
+    ['Nuno', 'Marcele', 'Cris'].forEach(nome => {
+        const cEl = document.getElementById(`kcount-${nome}`);
+        if(cEl) cEl.textContent = counts[nome] || 0;
+        const qEl = document.getElementById(`kqty-${nome}`);
+        if(qEl) qEl.textContent = `${qtys[nome] || 0} pcs`;
+        const tabEl = document.getElementById(`tabcount-${nome}`);
+        if(tabEl) tabEl.textContent = counts[nome] || 0;
+    });
 
     // Mensagem de vazio quando aplicável
     Object.keys(cols).forEach(k => {
         const el = cols[k];
         if(el && !el.children.length) {
-            el.innerHTML = '<div class="kanban-empty-msg"><i class="fa-regular fa-circle-check" style="margin-right:6px;"></i>Sem peças nesta coluna.</div>';
+            const labelVazio = k ? `Sem tarefas para ${k} neste dia.` : 'Nenhuma peça pendente de atribuição.';
+            el.innerHTML = `<div class="kanban-empty-msg"><i class="fa-regular fa-circle-check" style="margin-right:6px;"></i>${labelVazio}</div>`;
         }
     });
+}
+
+function criarCardKanban(s, db, isJoao, trab) {
+    const p = (db.pecas || []).find(x => x.id === s.partId);
+    const c = (db.clientes || []).find(x => x.id === s.clienteId);
+    const clientName = c ? c.name : 'Cliente Desconhecido';
+    const pecaName = p ? p.name : '-';
+    const pecaRef = p ? (p.ref || p.refInterna || '') : '';
+    const isLate = s.dataPrevista && s.dataPrevista < new Date().toISOString().split('T')[0];
+    const prazoColor = isLate ? '#dc2626' : '#64748b';
+
+    // Banhos/Parâmetros em destaque no cartão
+    const banhos = [];
+    if(p && p.decap) banhos.push(`Dec: ${p.decap}`);
+    if(p && p.electro) banhos.push(`El: ${p.electro}`);
+    if(p && p.passiv) banhos.push(`Pas: ${p.passiv}`);
+    const banhosTxt = banhos.length ? banhos.join(' • ') : '';
+
+    const card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.id = `kcard-${s.id}`;
+    card.setAttribute('draggable', isJoao ? 'true' : 'false');
+    card.style.cursor = isJoao ? 'grab' : 'pointer';
+    if(!isJoao) {
+        card.title = 'Apenas o João Teixeira pode arrastar tarefas.';
+    }
+
+    let cardBorder = '#64748b';
+    if(trab === 'Nuno') cardBorder = '#2563eb';
+    else if(trab === 'Marcele') cardBorder = '#a855f7';
+    else if(trab === 'Cris') cardBorder = '#10b981';
+    card.style.borderLeftColor = cardBorder;
+
+    const dataPlaneadaBadge = s.dataPlaneada ? `<span style="font-size:0.75rem;background:rgba(37,99,235,0.08);color:#2563eb;padding:2px 6px;border-radius:4px;font-weight:600;"><i class="fa-solid fa-calendar-check"></i> ${s.dataPlaneada}</span>` : '';
+
+    card.innerHTML = `
+        <div class="kanban-card-header">
+            <span class="kanban-client-name">${clientName}</span>
+            <span class="kanban-guia">Guia ${s.guia || '-'}</span>
+        </div>
+        <div class="kanban-card-title">${pecaName}</div>
+        <div class="kanban-card-ref">${pecaRef ? 'Ref: ' + pecaRef : ''}</div>
+        ${banhosTxt ? `<div style="font-size:0.75rem;color:#475569;background:#f8fafc;padding:3px 6px;border-radius:4px;margin-bottom:6px;border:1px solid #e2e8f0;">⚡ ${banhosTxt}</div>` : ''}
+        ${s.observacoes ? `<div style="font-size:0.75rem;color:#b45309;background:#fffbeb;padding:3px 6px;border-radius:4px;margin-bottom:6px;"><i class="fa-solid fa-note-sticky"></i> ${s.observacoes}</div>` : ''}
+        <div class="kanban-card-footer">
+            <span class="kanban-card-qty"><i class="fa-solid fa-cubes"></i> ${s.qty || 1} peças</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+                ${dataPlaneadaBadge}
+                <span style="color:${prazoColor};font-weight:600;" title="Prazo de entrega"><i class="fa-regular fa-clock"></i> ${s.dataPrevista || '-'}</span>
+            </div>
+        </div>
+    `;
+
+    // Eventos de Drag & Drop para o João
+    if(isJoao) {
+        card.addEventListener('dragstart', (e) => {
+            card.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', s.id.toString());
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+        });
+    }
+
+    // Clicar no cartão abre a ficha de detalhe para consultar
+    card.addEventListener('click', (e) => {
+        if(!card.classList.contains('dragging')) {
+            verServico(s.id);
+        }
+    });
+
+    return card;
 }
 
 // Handlers Drag & Drop globais
@@ -1077,17 +1181,27 @@ window.planDrop = function(e, workerName) {
     const s = (db.servicos || []).find(x => x.id === sid);
     if(s) {
         const oldTrab = s.trabalhador || '';
-        if(oldTrab === workerName) return; // Nada mudou
+        const oldData = s.dataPlaneada || '';
 
-        s.trabalhador = workerName || '';
+        // Se mover para trabalhador, define também a data planeada para o dia atualmente selecionado no filtro
+        if(workerName) {
+            if(oldTrab === workerName && oldData === currentPlanDate) return;
+            s.trabalhador = workerName;
+            s.dataPlaneada = currentPlanDate;
+        } else {
+            // Mover para 'Por Atribuir'
+            if(!oldTrab && !oldData) return;
+            s.trabalhador = '';
+            s.dataPlaneada = '';
+        }
+
         saveDB(db);
 
         const msg = workerName 
-            ? `Tarefa atribuída a ${workerName}! ✅`
+            ? `Tarefa atribuída a ${workerName} para ${formatarDataExtenso(currentPlanDate)}! ✅`
             : 'Tarefa movida para Por Atribuir.';
         showToast(msg);
 
-        // Re-renderizar o quadro de planeamento
         renderPlaneamento();
     }
 };

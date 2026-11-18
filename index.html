@@ -125,11 +125,11 @@
                 <!-- PÁGINA: PLANEAMENTO DIÁRIO (DRAG & DROP) -->
                 <div id="page-planeamento" class="page">
                     <div class="card">
-                        <div class="card-header-flex" style="align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div class="card-header-flex" style="align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:1rem;">
                             <div>
                                 <h3 style="margin:0;"><i class="fa-solid fa-people-arrows" style="color:var(--primary);"></i> Planeamento Diário por Trabalhador</h3>
                                 <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">
-                                    Arrasta as peças dos Trabalhos em Curso para o respetivo trabalhador (Nuno, Marcele, Cris) para organizar o dia de produção.
+                                    Organiza e consulta as tarefas por dia para cada trabalhador (Nuno, Marcele, Cris).
                                 </p>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
@@ -137,10 +137,42 @@
                             </div>
                         </div>
 
+                        <!-- Barra de Controlo: Seletor de Dia + Filtro de Trabalhador -->
+                        <div class="plan-controls-bar">
+                            <div class="plan-date-group">
+                                <span class="plan-label"><i class="fa-regular fa-calendar"></i> Dia de Produção:</span>
+                                <div class="plan-date-nav">
+                                    <button type="button" class="btn small-btn secondary-btn" onclick="planMudarDia(-1)" title="Dia Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <input type="date" id="plan-data-input" onchange="planSetData(this.value)">
+                                    <button type="button" class="btn small-btn secondary-btn" onclick="planMudarDia(1)" title="Dia Seguinte"><i class="fa-solid fa-chevron-right"></i></button>
+                                    <button type="button" class="btn small-btn outline-btn" onclick="planIrHoje()">Hoje</button>
+                                </div>
+                                <span id="plan-data-extenso" class="plan-date-text">--</span>
+                            </div>
+
+                            <div class="plan-filter-group">
+                                <span class="plan-label"><i class="fa-solid fa-filter"></i> Ver Trabalhador:</span>
+                                <div class="plan-filter-tabs">
+                                    <button type="button" class="plan-tab active" data-trab="todos" onclick="planFiltrarTrab('todos')">
+                                        <i class="fa-solid fa-table-columns"></i> Todos
+                                    </button>
+                                    <button type="button" class="plan-tab" data-trab="Nuno" onclick="planFiltrarTrab('Nuno')">
+                                        <span class="plan-tab-dot" style="background:#2563eb;"></span> Nuno (<span id="tabcount-Nuno">0</span>)
+                                    </button>
+                                    <button type="button" class="plan-tab" data-trab="Marcele" onclick="planFiltrarTrab('Marcele')">
+                                        <span class="plan-tab-dot" style="background:#a855f7;"></span> Marcele (<span id="tabcount-Marcele">0</span>)
+                                    </button>
+                                    <button type="button" class="plan-tab" data-trab="Cris" onclick="planFiltrarTrab('Cris')">
+                                        <span class="plan-tab-dot" style="background:#10b981;"></span> Cris (<span id="tabcount-Cris">0</span>)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Quadro Kanban / Drag & Drop -->
-                        <div class="kanban-board">
+                        <div class="kanban-board" id="kanban-board-container">
                             <!-- Coluna: A Aguardar Atribuição -->
-                            <div class="kanban-col" data-col="unassigned">
+                            <div class="kanban-col" id="kcol-unassigned" data-col="unassigned">
                                 <div class="kanban-col-header" style="border-top: 4px solid #64748b;">
                                     <div class="kanban-col-title">
                                         <i class="fa-solid fa-inbox" style="color:#64748b;"></i>
@@ -152,37 +184,46 @@
                             </div>
 
                             <!-- Coluna: Nuno -->
-                            <div class="kanban-col" data-col="Nuno">
+                            <div class="kanban-col" id="kcol-Nuno" data-col="Nuno">
                                 <div class="kanban-col-header" style="border-top: 4px solid #2563eb;">
                                     <div class="kanban-col-title">
                                         <div class="kanban-avatar" style="background:#2563eb;">N</div>
                                         <span>Nuno</span>
                                     </div>
-                                    <span class="badge" id="kcount-Nuno" style="background:rgba(37,99,235,0.15);color:#2563eb;">0</span>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <span class="badge" id="kqty-Nuno" style="background:rgba(37,99,235,0.1);color:#2563eb;font-size:0.75rem;">0 pcs</span>
+                                        <span class="badge" id="kcount-Nuno" style="background:rgba(37,99,235,0.15);color:#2563eb;">0</span>
+                                    </div>
                                 </div>
                                 <div class="kanban-cards" id="kcards-Nuno" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, 'Nuno')"></div>
                             </div>
 
                             <!-- Coluna: Marcele -->
-                            <div class="kanban-col" data-col="Marcele">
+                            <div class="kanban-col" id="kcol-Marcele" data-col="Marcele">
                                 <div class="kanban-col-header" style="border-top: 4px solid #a855f7;">
                                     <div class="kanban-col-title">
                                         <div class="kanban-avatar" style="background:#a855f7;">M</div>
                                         <span>Marcele</span>
                                     </div>
-                                    <span class="badge" id="kcount-Marcele" style="background:rgba(168,85,247,0.15);color:#a855f7;">0</span>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <span class="badge" id="kqty-Marcele" style="background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.75rem;">0 pcs</span>
+                                        <span class="badge" id="kcount-Marcele" style="background:rgba(168,85,247,0.15);color:#a855f7;">0</span>
+                                    </div>
                                 </div>
                                 <div class="kanban-cards" id="kcards-Marcele" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, 'Marcele')"></div>
                             </div>
 
                             <!-- Coluna: Cris -->
-                            <div class="kanban-col" data-col="Cris">
+                            <div class="kanban-col" id="kcol-Cris" data-col="Cris">
                                 <div class="kanban-col-header" style="border-top: 4px solid #10b981;">
                                     <div class="kanban-col-title">
                                         <div class="kanban-avatar" style="background:#10b981;">C</div>
                                         <span>Cris</span>
                                     </div>
-                                    <span class="badge" id="kcount-Cris" style="background:rgba(168,85,247,0.15);color:#10b981;">0</span>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <span class="badge" id="kqty-Cris" style="background:rgba(16,185,129,0.1);color:#10b981;font-size:0.75rem;">0 pcs</span>
+                                        <span class="badge" id="kcount-Cris" style="background:rgba(16,185,129,0.15);color:#10b981;">0</span>
+                                    </div>
                                 </div>
                                 <div class="kanban-cards" id="kcards-Cris" ondragover="planDragOver(event)" ondragleave="planDragLeave(event)" ondrop="planDrop(event, 'Cris')"></div>
                             </div>
@@ -261,7 +302,7 @@
                             <div class="input-group"><label>Data de Entrada</label><input type="date" id="ed-data-entrada"></div>
                             <div class="input-group"><label>Quantidade ("Peças")</label><input type="number" id="ed-quantidade" placeholder="Ex: 100"></div>
                         </div>
-                        <div class="grid-3 mt-1">
+                        <div class="grid-4 mt-1">
                             <div class="input-group"><label>Saída Prevista</label><input type="date" id="ed-data-prevista"></div>
                             <div class="input-group">
                                 <label>Trabalhador Atribuído</label>
@@ -271,6 +312,10 @@
                                     <option value="Marcele">Marcele</option>
                                     <option value="Cris">Cris</option>
                                 </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Dia Planeado</label>
+                                <input type="date" id="ed-data-planeada">
                             </div>
                             <div class="input-group" id="ed-data-real-group" style="display:none;"><label>Entrega Efetiva</label><input type="date" id="ed-data-real" style="border-color:var(--success);"></div>
                         </div>
@@ -367,6 +412,7 @@
                             <div class="input-group"><label>Guia de Remessa</label><input type="text" id="dv-guia" disabled></div>
                             <div class="input-group"><label>Quantidade</label><input type="text" id="dv-qty" disabled></div>
                             <div class="input-group"><label>Trabalhador</label><input type="text" id="dv-trabalhador" disabled style="font-weight:700;color:var(--primary);"></div>
+                            <div class="input-group"><label>Dia Planeado</label><input type="text" id="dv-data-planeada" disabled style="font-weight:600;color:#2563eb;"></div>
                             <div class="input-group"><label>Data de Entrada</label><input type="text" id="dv-entrada" disabled></div>
                             <div class="input-group"><label>Data de Entrega</label><input type="text" id="dv-entrega" disabled></div>
                             <div class="input-group"><label>Estado</label><input type="text" id="dv-estado" disabled></div>
